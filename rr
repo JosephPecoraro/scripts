@@ -1,0 +1,173 @@
+#!/usr/bin/env ruby
+# Start Date: Sunday December 2, 2007 (v0.9)
+# Most Recent Update: Saturday January 26, 2008
+# Current Version: 1.2
+# Author: Joseph Pecoraro
+# Contact: joepeck02@gmail.com
+# Decription: Default behavior is a multi-line search and replace utility that
+#  uses a regular expression for searching and allows back references to 
+#  captured groups from the pattern to appear in the replacement text
+
+# Global States
+line_processing = false
+case_sensitive = false
+global_replace = true
+modify_original = false
+
+# Usage Message to print
+$program_name = $0.split(/\//).last
+usage = <<USAGE
+usage: #{$program_name} [options] find replace [filenames]
+       #{$program_name} [options] s/find/replace/ [filenames]
+  find      - a regular expression to be run on the entire file as one string
+  replace   - replacement text, \\1-\\9 and metachars (\\n, etc.) are allowed
+  filenames - names of the input files to be parsed, if blank uses STDIN
+  
+options:
+  --line or -l    process line by line instead of all at once (not default)
+  --case or -c    makes the regular expression case sensitive (not default)
+  --global or -g  process all occurrences in the text (default)
+  --modify or -m  changes will directly modify the original file (not default)
+
+negated options are done by adding 'not' or 'n' in switches like so:
+  --notline or -nl
+
+special note:
+  When using bash, if you want backslashes in the replace portion make sure
+  to use the multiple argument usage with single quotes for the replacement.
+
+example usage:
+  Replace all a's with e's
+  #{$program_name} s/a/e/ file
+  #{$program_name} a e file
+
+  Doubles the last character on each line and doubles the newline.
+  #{$program_name} "(.)\\n" "\\1\\1\\n\\n" file
+
+USAGE
+
+# Print an error message and exit
+def err(msg)  
+  puts "#{$program_name}: #{msg}"
+  exit 1
+end
+
+# Possible Switches
+ARGV.each_index do |i|
+  arg = ARGV[i]
+  if arg[0] == ?- then
+    case arg
+      when "--line"     , "-l"  then line_processing = true
+      when "--notline"  , "-nl" then line_processing = false
+      when "--case"     , "-c"  then case_sensitive = true
+      when "--notcase"  , "-nc" then case_sensitive = false
+      when "--global"   , "-g"  then global_replace = true
+      when "--notglobal", "-ng" then global_replace = false
+      when "--modify"   , "-m"  then modify_original = true
+      when "--notmodify", "-nm" then modify_original = false
+      else err("illegal option #{arg}")
+    end
+  end
+end
+
+# Remove the Switches from ARGV
+ARGV.delete_if { |elem| elem[0] == ?- }
+
+# Check if it is quick mode (meaning cmdline argument is s/find/replace/)
+find_str = find = replace = filename = nil
+if ARGV.first =~ /^s\/(.*)?\/(.*)?\/(\w*)?$/
+  find_str = $1
+  replace = $2
+  first_filename = 1
+  ARGV << nil if ARGV.size == 1
+  
+# Not Quick Mode, Arguments are seperate on the cmdline
+elsif ARGV.size >= 2
+  find_str = ARGV[0]
+  replace = ARGV[1].dup
+  first_filename = 2
+  ARGV << nil if ARGV.size == 2
+  
+  # User is allowed to wrap the find regex in /'s (this removes them)
+  find_str = find_str[1..(find_str.length-2)] if find_str =~ /^\/.*?\/$/
+
+# Bad Arguments, show usage
+else
+  puts usage
+  exit 1
+end
+
+# Make find_str into a Regexp object
+if case_sensitive
+  find = Regexp.new( find_str )
+else
+  find = Regexp.new( find_str, Regexp::IGNORECASE )
+end
+
+# Map metacharacters in the replace portion
+replace.gsub!(/\\[\\ntrvfbae]/) do |match|
+  case match
+    when "\\\\" then match = "\\" # A backslash
+    when "\\n"  then match = "\n" # Newline
+    when "\\t"  then match = "\t" # Tab
+    when "\\r"  then match = "\r" # Carriage Return
+    when "\\v"  then match = "\v" # Vertical Tab
+    when "\\f"  then match = "\f" # Formfeed
+    when "\\b"  then match = "\b" # Backspace
+    when "\\a"  then match = "\a" # Bell
+    when "\\e"  then match = "\e" # Escape
+  end
+end
+
+# Loop through all the filenames doing the find/replace
+first_filename.upto(ARGV.size-1) do |i|
+  
+  # Check for Possible File Errors or if the filename is nil make it STDIN
+  filename = ARGV[i]
+  unless filename.nil?
+    if !File.exist? filename
+      err("#{filename}: No such file")
+    elsif File.directory? filename
+      err("#{filename}: This is a directory, not a file.")
+    elsif !File.readable? filename
+      err("#{filename}: File is not readable by this user.")
+    elsif !File.writable? filename
+      err("#{filename}: File is not writable by this user.")
+    end
+  else
+    filename = STDIN.fileno
+  end
+
+  # Setup the stream to print to
+  if modify_original && filename != STDIN.fileno then
+    temp_filename = filename + '.tmp'
+    stream = File.new(temp_filename, File::CREAT|File::TRUNC|File::RDWR, 0644)
+  else
+    stream = STDOUT
+  end
+
+  # Default Behavior (and basicically what they all do)
+  # 1. Open the file
+  # 2. Read text as 1 big sting (memory intensive) or Line by Line
+  # 3. Run the Find/Replace globally or non-globally
+  # 4. Print the result to a stream
+  if line_processing and global_replace then
+    File.new(filename).readlines.each { |line| stream.puts line.gsub(find,replace) }
+  elsif line_processing and !global_replace then
+    File.new(filename).readlines.each { |line| stream.puts line.sub(find,replace) }
+  elsif !line_processing and global_replace
+    stream.puts File.new(filename).read.gsub(find,replace)
+  else
+    stream.puts File.new(filename).read.sub(find,replace)
+  end
+
+  # If the stream was a temp file then clean up
+  if modify_original && filename != STDIN.fileno then
+    stream.close
+    File.rename(temp_filename, filename)
+  end
+
+end
+  
+# Successful
+exit 0

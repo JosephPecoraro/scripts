@@ -1,0 +1,15 @@
+Author: Joseph Pecoraro
+
+Version 0.9.9: Tuesday January 29, 2008
+- mgrep [options] [-#] ( [-n] regex ) [filenames]
+- added the --all option to scan the entire file and check results (instead 
+  of scanning and having a single line match all the criteria).
+- now parses directories, so the filename can be a directory, it will
+  recursively check every file under that directory
+- code has been uglified, expect it to be cleaned for version 1.0
+
+Version 0.9: Saturday January 26, 2008
+- mgrep [-#] ( [-n] regex ) [filenames]
+- there are no options yet, although this could implement almost
+  all of grep or awk's options so I may check that out.  As well
+  as formatting output differently.

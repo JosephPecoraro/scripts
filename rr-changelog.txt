@@ -1,0 +1,28 @@
+Author: Joseph Pecoraro
+
+Version 1.2: Saturday January 26, 2008
+- #!/usr/bin/env ruby should be the default ruby for all users
+- Spelling correction in usage.
+
+Version 1.1: Tuesday January 1, 2008
+- New option [--modify or shorter -m] for modifying a file in place, nice
+  if test an rr command, see it is what you want then just add the -m option
+  to make it happen.
+- Multiple filenames are now supported. This allows for *.txt ease of use.
+
+Version 1.0: Sunday December 30, 2007
+- filename argument is now optional, if not provided input will come from
+  standard in.  This means that rr is now a pipe friendly filter!
+
+Version 0.9.1: Monday December 17, 2007
+- Allow for optional s/find/replace/ syntax
+- Allow for optional /'s around the regex in the normal 3 argument syntax
+- Now performs all escape sequences, \n, \t, \a, \\, ...
+- Expanded usage to reflect all changes
+
+Version 0.9: Sunday December 2, 2007
+- usage: rr [options] find replace filename
+- options for line/string processing, character sensitivity, and 
+  global or single replacements (see usage)
+- Allow for backreferences in the replace portion by using \t
+- Allow for \n escape sequence
