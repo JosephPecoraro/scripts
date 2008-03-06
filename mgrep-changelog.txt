@@ -1,5 +1,10 @@
 Author: Joseph Pecoraro
 
+Version 1.0: Thursday March 6, 2008
+- added --hidden option to allow scanning of hidden files/directories
+- now skips symlinks immediately
+- cleaned has been beautified, cleaner handling of files vs. STDIN
+
 Version 0.9.9: Tuesday January 29, 2008
 - mgrep [options] [-#] ( [-n] regex ) [filenames]
 - added the --all option to scan the entire file and check results (instead 
