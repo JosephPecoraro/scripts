@@ -178,7 +178,7 @@ argv_index.upto( ARGV.size-1 ) do |i|
     # Check each file recursively
     # NOTE: Find will recurse down all layers, so just skip dirs
     Find.find(filename) do |new_filename|
-      if !$search_hidden && new_filename.match( /^(.*\/)?\.\w/ )
+      if (!$search_hidden && new_filename.match(/^(.*\/)?\.\w/)) || (File.symlink? new_filename)
         Find.prune
       elsif File.directory? new_filename
         next
