@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # Start Date: Saturday January 26, 2008
-# Most Recent Update: Saturday January 26, 2008
-# Current Version: 0.9
+# Most Recent Update: Thursday March 6, 2008
+# Current Version: 1.0
 # Author: Joseph Pecoraro
 # Contact: joepeck02@gmail.com
 # Decription: Default behavior is a multiple regular expressions grep
@@ -15,8 +15,10 @@ require 'find'
 
 # Global States
 $all_mode   = false
+$search_hidden = false
 $regex_list = []
 $regex_neg  = []
+
 
 # Usage Message to print
 $program_name = $0.split(/\//).last
@@ -29,6 +31,7 @@ usage: #{$program_name} [options] [-#] ( [-n] regex ) [filenames]
 
 options:
   --all or -a            instead of line-by-line this scans the entire file
+  --hidden or -h         search hidden files and hidden directories
 
 before regex:
   --neg, --not, or -n    line must not match this regular expression
@@ -45,18 +48,18 @@ def err(msg)
   exit 1
 end
 
-# The bulk, where things really happen
-def check_file( filename, print_filename )
-    
-  # Check permissions for safety if the filename is not STDIN
-  if filename != STDIN.fileno
-    if !File.exist? filename
-      err("#{filename}: No such file")
-    elsif !File.readable? filename
-      err("#{filename}: File is not readable by this user.")
-    end
+# Check existence and permissions for the file
+def check_file(filename)
+  if !File.exists? filename
+    err("#{filename}: No such file")
+  elsif !File.readable? filename
+    err("#{filename}: File is not readable by this user.")
   end
+  check_stream(filename, filename+' ')
+end
 
+def check_stream( stream, print_name )
+  
   # Default Behavior
   # 1. Open the file
   # 2. Read text line by line
@@ -66,13 +69,13 @@ def check_file( filename, print_filename )
   #    match all conditions
   if ( !$all_mode )
     line_num = 0
-    File.new(filename).readlines.each do |line|
+    File.new(stream).readlines.each do |line|
       line_num += 1
       temp_negs = []
       $regex_list.each do |regex|
         temp_negs.push( !line.match(regex).nil? )
       end
-      puts "#{print_filename}[#{line_num}]: #{line}" if $regex_neg.eql? temp_negs
+      puts "#{print_name}[#{line_num}]: #{line}" if $regex_neg.eql? temp_negs
     end
 
   # all mode
@@ -83,17 +86,17 @@ def check_file( filename, print_filename )
   # 5. Test the temp array against $regex_neg, if there is a match print the filename
   else
     all_array = Array.new($regex_neg.size, false)
-    File.new(filename).readlines.each do |line|
+    File.new(stream).readlines.each do |line|
       $regex_list.each_index do |i|
         regex = $regex_list[i]
         all_array[i] = true if !line.match(regex).nil?
       end
     end
     if $regex_neg.eql? all_array
-      if filename == STDIN.fileno
+      if stream == STDIN.fileno
         puts "STDIN matches all regular expressions"
       else
-        puts print_filename
+        puts print_name
       end
     end
   end
@@ -108,6 +111,9 @@ ARGV.each_index do |i|
   arg = ARGV[i]
   if arg.match /^-(-all|a)$/
     $all_mode = true
+    ARGV[i] = nil
+  elsif arg.match /^-(-hidden|h)$/
+    $search_hidden = true
     ARGV[i] = nil
   else
     break
@@ -160,31 +166,30 @@ ARGV << nil if argv_index == ARGV.size
 # Start to parse the files
 argv_index.upto( ARGV.size-1 ) do |i|
 
-  # Get filenames and get them ready to print out, also nil means STDIN
-  filename = print_filename = ARGV[i]
+  # STDIN
+  filename = ARGV[i]
   if filename.nil?
     filename = STDIN.fileno
-    print_filename = ''
-  else
-    print_filename += ' '
-  end
+    check_stream(filename, '')
   
-  # If it is a directoy
-  if filename != STDIN.fileno and File.directory? filename
+  # If it is a directory
+  elsif File.directory? filename
     
     # Check each file recursively
-    # NOTE: Find will recurse down all layers, so just skip Dirs
+    # NOTE: Find will recurse down all layers, so just skip dirs
     Find.find(filename) do |new_filename|
-      if File.directory? new_filename
+      if !$search_hidden && new_filename.match( /^(.*\/)?\.\w/ )
+        Find.prune
+      elsif File.directory? new_filename
         next
       else
-        check_file(new_filename, (new_filename+' ') )
+        check_file(new_filename)
       end
     end
   
-  # If it is a file go and check it
+  # If it is a file go and check it [even if hidden]
   else
-    check_file(filename, print_filename)
+    check_file(filename)
   end
 
 end
