@@ -1,0 +1,5 @@
+Author: Joseph Pecoraro
+
+Version 1.0: March 16, 2008
+- takes files on the command line and outputs each to STDOUT reformatted
+- replaces the text inside all <id> elements with '--removed--'
