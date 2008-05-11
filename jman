@@ -1,0 +1,48 @@
+#!/bin/bash
+# jman
+# Sunday May 11, 2008
+# Author: Joseph Pecoraro
+# Email: joepeck02@gmail.com
+# Version: 1.0
+
+# Variables/States
+outputType=cat
+joemanDir="`echo $HOME`/bin/.joeman/"
+
+# Usage string
+usage="usage:`basename $0` [-l] progName\n\n\t-l\t\toutput with /usr/bin/less\n\tprogName\tEx. ruby, tr, awk, grep, ...\n"
+
+# Bad number of arguments
+if [[ $# -eq 0 ]] || [[ $# -gt 2 ]]; then
+	echo -e $usage
+	exit 1
+fi
+
+# If two params the first should be -c, ingore otherwise
+if [[ $# -eq 2 ]]; then
+	if [[ "-l" == "$1" ]]; then
+		outputType=less
+	fi
+	shift
+fi
+
+# Ensure filename doesn't every have "../"
+if [[ "$1" =~ / ]]; then
+	echo "Filename cannot contain '/'"
+	exit 1
+fi
+
+# Check for the existence of the filename
+path="$joemanDir$1"
+if [[ ! -e $path ]]; then
+	echo "$1: File does not exist."
+	exit 1
+fi
+
+# Print out the file
+# $outputType  is an element of {less, cat}
+# $path        is the full path to the joeman file
+eval "$outputType $path"
+
+# Successful
+exit 0

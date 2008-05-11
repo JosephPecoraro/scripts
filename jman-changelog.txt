@@ -1,0 +1,7 @@
+Author: Joseph Pecoraro
+
+Version 1.0: Sunday May 11, 2008
+- usage:jman [-l] progName
+- Directory of files is ~/bin/.joeman/
+- Defaults to /bin/cat
+- Currently the only option is -l which switches to /usr/bin/less
