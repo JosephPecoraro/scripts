@@ -1,0 +1,5 @@
+Author: Joseph Pecoraro
+
+Version 1.0: Saturday May 24, 2008
+- usage: inflate [-o] balloon
+- use --open or -o to open a browser to the balloon

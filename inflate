@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+# Date: Saturday May 24, 2008
+# Author: Joseph Pecoraro
+# Contact: joepeck02@gmail.com
+# Original Idea by defunkt - http://balloon.hobix.com/~defunkt 
+# Decription: Open or run a balloon.
+
+require 'open-uri'
+usage = <<USAGE
+usage: inflate [-o] balloon
+options: --open or -o   open in browser, do not download
+http://balloon.hobix.com/ for details.
+USAGE
+
+# No args, print usage
+if ARGV.empty?
+  puts usage
+  exit 0
+end
+
+# State for the switch
+open = false
+if ARGV.first =~ /^-(-open|o)$/
+  open = true
+  ARGV.shift
+end
+
+# Work it!
+url = 'http://balloon.hobix.com/'
+url += ARGV.shift unless ARGV.empty?
+if open
+  `open #{url}`
+else
+  eval(open(url).read) rescue puts "** balloon not found"
+end
+
