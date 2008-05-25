@@ -1,0 +1,15 @@
+Joseph Pecoraro's Scripts
+=========================
+
+This is a collection of scripts that I have written that help me do useful
+things.  They are written for my MacBook Pro so I wouldn't be surprised if you
+needed to make minor tweaks (like the shebang #! lines) to have them work on a
+Unix/Linux box.
+
+They are Free, Open Source, and Useful.  Please expand, fork, suggest merges,
+and provide feedback or advice.
+
+Enjoy,
+Joseph Pecoraro
+
+Copyright (c) 2008 Joseph Pecoraro, released under the MIT license
