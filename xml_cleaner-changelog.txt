@@ -1,5 +1,10 @@
 Author: Joseph Pecoraro
 
+Version 1.1: Tuesday May 20, 2008
+- no longer replaces <id> elements
+- pipeable, allows input from STDIN
+- still short at sweet
+
 Version 1.0: March 16, 2008
 - takes files on the command line and outputs each to STDOUT reformatted
 - replaces the text inside all <id> elements with '--removed--'
