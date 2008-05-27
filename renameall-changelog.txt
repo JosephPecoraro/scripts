@@ -1,0 +1,5 @@
+Author: Joseph Pecoraro
+
+Version 0.9: Monday May 26, 2008
+- usage: renameall from_extension to_extension
+- I find I often have to do something like this, so here it is, reusable

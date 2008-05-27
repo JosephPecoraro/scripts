@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+# Start Date: Monday May 26, 2008
+# Current Version: 0.9
+# Author: Joseph Pecoraro
+# Contact: joepeck02@gmail.com
+# Decription: Quick and easy way to change the extension of all the
+# files in a directory.  Ideas for improvements are welcome.
+
+# Wrapper around the functionality
+class Renamer
+  
+  attr_accessor :from_extension, :to_extension
+  
+  # Quickly set the from and to extension
+  def initialize(from_extension, to_extension)
+    @from_extension, @to_extension = from_extension, to_extension
+  end
+
+  # Rename all the files in a given directory
+  # Default to the current directory
+  def rename_all_in_dir(dir="./")
+    Dir.glob(dir + "*.#{@from_extension}").each do |f|
+      changeTo = File.basename(f,@from_extension) + @to_extension
+      if File.exists? changeTo
+        puts "Warning: #{f.sub(dir,'')}: Did not change because #{changeTo} already existed!"
+      else
+    	  File.rename(f, changeTo)
+    	end
+    end
+  end
+
+end
+
+# When run as as script
+if $0 == __FILE__
+  if ARGV.size != 2
+    program_name = $0.split(/\//).last
+    puts "usage: #{program_name} from_extension to_extension\nExample: #{program_name} rhtml haml - changes the extension of all .rhtml files to .haml"
+  else
+    Renamer.new(ARGV[0], ARGV[1]).rename_all_in_dir
+  end
+end
