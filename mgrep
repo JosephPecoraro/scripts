@@ -15,6 +15,7 @@ require 'find'
 
 # Global States
 $all_mode   = false
+$quiet_mode = false
 $search_hidden = false
 $regex_list = []
 $regex_neg  = []
@@ -32,6 +33,7 @@ usage: #{$program_name} [options] [-#] ( [-n] regex ) [filenames]
 options:
   --all or -a            instead of line-by-line this scans the entire file
   --hidden or -h         search hidden files and hidden directories
+  --quiet or -q          quiet, don't list files and line numbers
 
 before regex:
   --neg, --not, or -n    line must not match this regular expression
@@ -44,7 +46,7 @@ USAGE
 
 # Print an error message and exit
 def err(msg)  
-  puts "#{$program_name}: #{msg}"
+  STDERR.puts("#{$program_name}: #{msg}")
   exit 1
 end
 
@@ -75,7 +77,10 @@ def check_stream( stream, print_name )
       $regex_list.each do |regex|
         temp_negs.push( !line.match(regex).nil? )
       end
-      puts "#{print_name}[#{line_num}]: #{line}" if $regex_neg.eql? temp_negs
+      if $regex_neg.eql? temp_negs
+        print "#{print_name}[#{line_num}]: " unless $quiet_mode
+        puts line
+      end
     end
 
   # all mode
@@ -114,6 +119,9 @@ ARGV.each_index do |i|
     ARGV[i] = nil
   elsif arg.match /^-(-hidden|h)$/
     $search_hidden = true
+    ARGV[i] = nil
+  elsif arg.match /^-(-quiet|q)$/
+    $quiet_mode = true
     ARGV[i] = nil
   else
     break

@@ -1,5 +1,9 @@
 Author: Joseph Pecoraro
 
+Version 1.1: Sunday July 13, 2008
+- added --quiet option to muffle the filename/line number
+- error messages now print on stderr
+
 Version 1.0: Thursday March 6, 2008
 - added --hidden option to allow scanning of hidden files/directories
 - now skips symlinks immediately
