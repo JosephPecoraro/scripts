@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # Start Date: Saturday January 26, 2008
-# Most Recent Update: Thursday March 6, 2008
-# Current Version: 1.0
+# Most Recent Update: Monday July 14, 2008
+# Current Version: 1.2
 # Author: Joseph Pecoraro
 # Contact: joepeck02@gmail.com
 # Decription: Default behavior is a multiple regular expressions grep
@@ -31,12 +31,12 @@ usage: #{$program_name} [options] [-#] ( [-n] regex ) [filenames]
   filenames - names of the input files to be parsed, if blank uses STDIN
 
 options:
-  --all or -a            instead of line-by-line this scans the entire file
-  --hidden or -h         search hidden files and hidden directories
-  --quiet or -q          quiet, don't list files and line numbers
+  --all or -a             instead of line-by-line this scans the entire file
+  --hidden or -h          search hidden files and hidden directories
+  --quiet or -q           quiet, don't list files and line numbers
 
 before regex:
-  --neg, --not, or -n    line must not match this regular expression
+  --neg, --not, -n, or !  line must not match this regular expression
 
 special note:
   When using bash, if you want backslashes in the replace portion make sure
@@ -46,66 +46,66 @@ USAGE
 
 # Print an error message and exit
 def err(msg)  
-  STDERR.puts("#{$program_name}: #{msg}")
-  exit 1
+	STDERR.puts("#{$program_name}: #{msg}")
+	exit 1
 end
 
 # Check existence and permissions for the file
 def check_file(filename)
-  if !File.exists? filename
-    err("#{filename}: No such file")
-  elsif !File.readable? filename
-    err("#{filename}: File is not readable by this user.")
-  end
-  check_stream(filename, filename+' ')
+	if !File.exists? filename
+		err("#{filename}: No such file")
+	elsif !File.readable? filename
+		err("#{filename}: File is not readable by this user.")
+	end
+	check_stream(filename, filename+' ')
 end
 
 def check_stream( stream, print_name )
-  
-  # Default Behavior
-  # 1. Open the file
-  # 2. Read text line by line
-  # 3. Run each regular expression, and check if it should match or
-  #    if it should not match based on the command line switches
-  # 4. Print the filename, line number, and line which successfully
-  #    match all conditions
-  if ( !$all_mode )
-    line_num = 0
-    File.new(stream).readlines.each do |line|
-      line_num += 1
-      temp_negs = []
-      $regex_list.each do |regex|
-        temp_negs.push( !line.match(regex).nil? )
-      end
-      if $regex_neg.eql? temp_negs
-        print "#{print_name}[#{line_num}]: " unless $quiet_mode
-        puts line
-      end
-    end
+	
+	# Default Behavior
+	# 1. Open the file
+	# 2. Read text line by line
+	# 3. Run each regular expression, and check if it should match or
+	#		 if it should not match based on the command line switches
+	# 4. Print the filename, line number, and line which successfully
+	#		 match all conditions
+	if ( !$all_mode )
+		line_num = 0
+		File.new(stream).readlines.each do |line|
+			line_num += 1
+			temp_negs = []
+			$regex_list.each do |regex|
+				temp_negs.push( !line.match(regex).nil? )
+			end
+			if $regex_neg.eql? temp_negs
+				print "#{print_name}[#{line_num}]: " unless $quiet_mode
+				puts line
+			end
+		end
 
-  # all mode
-  # 1. Setup an array (all_array) we hope will end up like $regex_neg
-  # 2. Open the file
-  # 3. Read text line by line
-  # 4. Run the regular expression, set all found regexs in the temp array
-  # 5. Test the temp array against $regex_neg, if there is a match print the filename
-  else
-    all_array = Array.new($regex_neg.size, false)
-    File.new(stream).readlines.each do |line|
-      $regex_list.each_index do |i|
-        regex = $regex_list[i]
-        all_array[i] = true if !line.match(regex).nil?
-      end
-    end
-    if $regex_neg.eql? all_array
-      if stream == STDIN.fileno
-        puts "STDIN matches all regular expressions"
-      else
-        puts print_name
-      end
-    end
-  end
-  
+	# all mode
+	# 1. Setup an array (all_array) we hope will end up like $regex_neg
+	# 2. Open the file
+	# 3. Read text line by line
+	# 4. Run the regular expression, set all found regexs in the temp array
+	# 5. Test the temp array against $regex_neg, if there is a match print the filename
+	else
+		all_array = Array.new($regex_neg.size, false)
+		File.new(stream).readlines.each do |line|
+			$regex_list.each_index do |i|
+				regex = $regex_list[i]
+				all_array[i] = true if !line.match(regex).nil?
+			end
+		end
+		if $regex_neg.eql? all_array
+			if stream == STDIN.fileno
+				puts "STDIN matches all regular expressions"
+			else
+				puts print_name
+			end
+		end
+	end
+	
 end
 
 
@@ -113,19 +113,19 @@ end
 # Script starts here
 # Check for options, make them nils, then delete nils
 ARGV.each_index do |i|
-  arg = ARGV[i]
-  if arg.match /^-(-all|a)$/
-    $all_mode = true
-    ARGV[i] = nil
-  elsif arg.match /^-(-hidden|h)$/
-    $search_hidden = true
-    ARGV[i] = nil
-  elsif arg.match /^-(-quiet|q)$/
-    $quiet_mode = true
-    ARGV[i] = nil
-  else
-    break
-  end
+	arg = ARGV[i]
+	if arg.match /^-(-all|a)$/
+		$all_mode = true
+		ARGV[i] = nil
+	elsif arg.match /^-(-hidden|h)$/
+		$search_hidden = true
+		ARGV[i] = nil
+	elsif arg.match /^-(-quiet|q)$/
+		$quiet_mode = true
+		ARGV[i] = nil
+	else
+		break
+	end
 end
 
 # Remove the nils from ARGV
@@ -133,38 +133,38 @@ ARGV.delete_if { |elem| elem.nil? }
 
 # Must be at least 1 argument (a regex)
 if ARGV.size < 1
-  puts usage
-  exit
+	puts usage
+	exit
 end
 
 # Check the first argument
 num_regex = 1
 argv_index = 0
 if ARGV[argv_index].match( /^-(\d+)$/ )
-  num_regex = $1.to_i
-  argv_index += 1
+	num_regex = $1.to_i
+	argv_index += 1
 end
 
 # Pull out that many regular expressions
 1.upto(num_regex) do |i|
-  
-  # Check if it is a negation option
-  if ARGV[argv_index].match( /^-(-neg|-not|n)$/ )
-    $regex_neg.push( false )
-    argv_index += 1
-  else
-    $regex_neg.push( true )
-  end
-  
-  # Get the regular expressions
-  find_str = ARGV[argv_index]
-  argv_index += 1
-  
-  # User is allowed to wrap the find regex in /'s (this removes them)
-  find_str = find_str[1..(find_str.length-2)] if find_str =~ /^\/.*?\/$/
-  
-  # Convert to a regular expression and add to the collection
-  $regex_list.push( Regexp.new( find_str, Regexp::IGNORECASE ) )
+	
+	# Check if it is a negation option
+	if ARGV[argv_index].match( /^(-(-neg|-not|n))|!$/ )
+		$regex_neg.push( false )
+		argv_index += 1
+	else
+		$regex_neg.push( true )
+	end
+	
+	# Get the regular expressions
+	find_str = ARGV[argv_index]
+	argv_index += 1
+	
+	# User is allowed to wrap the find regex in /'s (this removes them)
+	find_str = find_str[1..(find_str.length-2)] if find_str =~ /^\/.*?\/$/
+	
+	# Convert to a regular expression and add to the collection
+	$regex_list.push( Regexp.new( find_str, Regexp::IGNORECASE ) )
 
 end
 
@@ -174,31 +174,31 @@ ARGV << nil if argv_index == ARGV.size
 # Start to parse the files
 argv_index.upto( ARGV.size-1 ) do |i|
 
-  # STDIN
-  filename = ARGV[i]
-  if filename.nil?
-    filename = STDIN.fileno
-    check_stream(filename, '')
-  
-  # If it is a directory
-  elsif File.directory? filename
-    
-    # Check each file recursively
-    # NOTE: Find will recurse down all layers, so just skip dirs
-    Find.find(filename) do |new_filename|
-      if (!$search_hidden && new_filename.match(/^(.*\/)?\.\w/)) || (File.symlink? new_filename)
-        Find.prune
-      elsif File.directory? new_filename
-        next
-      else
-        check_file(new_filename)
-      end
-    end
-  
-  # If it is a file go and check it [even if hidden]
-  else
-    check_file(filename)
-  end
+	# STDIN
+	filename = ARGV[i]
+	if filename.nil?
+		filename = STDIN.fileno
+		check_stream(filename, '')
+	
+	# If it is a directory
+	elsif File.directory? filename
+		
+		# Check each file recursively
+		# NOTE: Find will recurse down all layers, so just skip dirs
+		Find.find(filename) do |new_filename|
+			if (!$search_hidden && new_filename.match(/^(.*\/)?\.\w/)) || (File.symlink? new_filename)
+				Find.prune
+			elsif File.directory? new_filename
+				next
+			else
+				check_file(new_filename)
+			end
+		end
+	
+	# If it is a file go and check it [even if hidden]
+	else
+		check_file(filename)
+	end
 
 end
 

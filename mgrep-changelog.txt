@@ -1,5 +1,8 @@
 Author: Joseph Pecoraro
 
+Version 1.2: Monday July 14, 2008
+- added '!' to mean --not.  This is the same as awk and maybe others.
+
 Version 1.1: Sunday July 13, 2008
 - added --quiet option to muffle the filename/line number
 - error messages now print on stderr
