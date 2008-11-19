@@ -46,7 +46,11 @@ class BigPictureAnalyzer
 		# Ugly Sort Trick
 		# [1, 5, 3] => ["1:0", "5:1", "3:2"] => sort => ["5:1", "3:2", "1:0"]
 		@votes.each_with_index { |e, i| @votes[i] = "#{@votes[i]}:#{i}" }
-		@votes = @votes.sort.reverse
+		@votes = @votes.sort.sort do |a,b|
+		 	numa = a.split(/:/)[0].to_i
+			numb = b.split(/:/)[0].to_i
+			numb-numa
+		end
 		
 		# Possibly print the results
 		print_top_n(n) if n > 0
@@ -67,7 +71,7 @@ class BigPictureAnalyzer
 		puts @title
 		puts "Top Images Based on Comments"
 		puts "----------------------------\n\n"
-		0.upto(n) do |i|
+		0.upto(n-1) do |i|
 			cnt, img = @votes[i].split(':')
 			puts "  %2d: Image #%-2d - %d votes" % [i+1, img, cnt]
 		end
@@ -92,6 +96,7 @@ if $0 == __FILE__
 	# Command line args
 	url = ARGV[0]
 	n = ARGV[1].to_i || 10
+	n = 10 if n <= 0
 	
 	# Turn the url into a 'comments_' url if needed
 	uri = URI.parse(url)
