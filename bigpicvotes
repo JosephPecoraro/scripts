@@ -1,0 +1,114 @@
+#!/usr/bin/env ruby
+# Start Date: Wednesday November 19, 2008
+# Current Version: 0.9
+# Author: Joseph Pecoraro
+# Contact: joepeck02@gmail.com
+# Decription: Analyze the user comments for top images
+#   because the commenters often put the numbers for
+#   the images they really liked.
+
+require 'rubygems'
+require 'hpricot'
+require 'net/http'
+require 'uri'
+
+
+# Wrapper around the functionality
+class BigPictureAnalyzer
+  
+  # Takes in a valid Hpricot doc (assumes validation
+  # of the URL it was taken from occured elsewhere)
+  def initialize(url, body)
+		@url = url
+		@doc = Hpricot(body)
+		@votes = nil
+  end
+
+
+	# Analyze the doc
+	def analyze(n=0)
+		
+		# The title
+		@title = (@doc/'h2')[0].innerText
+		
+		# Find the Number of images to make a vote array
+		max = (@doc/'div.bpBody a')[-1].innerText.match(/\d+/).to_s.to_i
+		@votes = Array.new(max+1, 0)
+		
+		# Search Comments
+		(@doc/'.commentBodyText').each do |com|
+			com.to_s.gsub(/https?:.*?(\s|[<>])/i, 'zz').scan(/\d+/) do |num|
+				num = num.to_i
+				@votes[num] = @votes[num] + 1 if num <= max && num > 0
+			end
+		end
+
+		# Ugly Sort Trick
+		# [1, 5, 3] => ["1:0", "5:1", "3:2"] => sort => ["5:1", "3:2", "1:0"]
+		@votes.each_with_index { |e, i| @votes[i] = "#{@votes[i]}:#{i}" }
+		@votes = @votes.sort.reverse
+		
+		# Possibly print the results
+		print_top_n(n) if n > 0
+		
+	end
+
+
+	# Print the results
+	def print_top_n(n=10)
+		
+		# Error handling
+		n = 10 if n <= 0
+		n = @votes.length-1 if n > @votes.length
+			
+		# Print header and top n
+		puts
+		puts "----------------------------"
+		puts @title
+		puts "Top Images Based on Comments"
+		puts "----------------------------\n\n"
+		0.upto(n) do |i|
+			cnt, img = @votes[i].split(':')
+			puts "  %2d: Image #%-2d - %d votes" % [i+1, img, cnt]
+		end
+		puts
+		
+	end
+
+end
+
+
+
+# When run as as script
+if $0 == __FILE__
+	
+	# Expect at least one command line arg (1 to 2 args)
+	unless (1..2) === ARGV.size
+		program_name = $0.split(/\//).last
+		puts "usage: #{program_name} url [top#]"
+		exit 1
+	end
+	
+	# Command line args
+	url = ARGV[0]
+	n = ARGV[1].to_i || 10
+	
+	# Turn the url into a 'comments_' url if needed
+	uri = URI.parse(url)
+	parts = uri.path.split(/\//)
+	last = parts.last
+	unless last =~ /^comments_/
+		parts[ parts.length-1 ] = 'comments_' + last
+		uri.path = parts.join('/')
+	end
+
+	# Validate the the URI exists, and parse it if it does
+	begin
+		res = Net::HTTP.get_response uri
+		BigPictureAnalyzer.new(url, res.body).analyze(n)
+	rescue
+		puts "Page did not exist. Please correct the URL"
+		exit 2
+	end
+	
+end
