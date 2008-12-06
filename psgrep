@@ -1,0 +1,97 @@
+#!/usr/bin/env ruby
+# Start Date: Saturday December 6, 2008
+# Current Version: 0.9
+# Author: Joseph Pecoraro
+# Contact: joepeck02@gmail.com
+# Decription: Quicker handling of process searching
+# and killing.  Never type in a PID, just use regexes.
+
+# -----------
+#   Globals
+# -----------
+kill_mode = false
+icase_mode = false
+pattern = nil
+targets = []
+pids = []
+
+# ---------
+#   Usage
+# ---------
+def usage
+	puts "usage: #{$0.split(/\//).last} [options] pattern"
+	puts "  -k  or --kill   kills all processes"
+	puts "  -k# or --kill#  kills the [#] process"
+	exit 0
+end
+
+# -----------
+#   Options
+# -----------
+if ARGV.size > 1
+	ARGV.each do |arg|
+		if arg.match(/^-(k|-kill)(\d*)$/)
+			kill_mode = true
+			targets << $2.to_i unless $2.empty?
+		elsif arg.match(/^-(i|-ignore)$/)
+			icase_mode = true
+		end
+	end
+	ARGV.delete_if { |e| e.match(/^-/) }
+end
+
+# -------------------
+#   Remaaining Args
+# -------------------
+if ARGV.size != 1
+	usage
+end
+
+if icase_mode
+	pattern = Regexp.new( ARGV[0], Regexp::IGNORECASE )
+else
+	pattern = Regexp.new( ARGV[0] )
+end
+
+# ----------------------
+#   Actual `ps` Output
+# ----------------------
+lines = %x{ ps -Au#{ENV['USER']} }.split(/\n/)
+header = lines.shift
+
+# ----------
+#   psgrep
+# ----------
+puts
+puts "     #{header}"
+count = 0
+lines.each do |line|
+	unless line =~ /psgrep/
+		if line.match(pattern)
+			count += 1
+			puts "[#{count}]: #{line}"
+			if targets.empty? || targets.member?(count)
+				pids << line.strip.split[1]
+			end
+		end
+	end
+end
+
+# -------------
+#   Kill Mode
+# -------------
+if kill_mode
+	puts
+	puts "Killing Processes"
+	puts "-----------------"
+	pids.each_with_index do |pid, i|
+		print targets.empty? ? "[#{i}]:" :  "[#{targets[i]}]:"
+		print " Killing #{pid}... "
+		STDOUT.flush
+		res = %x{ kill #{pid} }
+		puts "Dead" if $?.exitstatus.zero?
+	end
+end
+
+# Always
+puts
