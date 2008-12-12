@@ -4,7 +4,7 @@
 # Author: Joseph Pecoraro
 # Contact: joepeck02@gmail.com
 # Decription: Quicker handling of process searching
-# and killing.  Never type in a PID, just use regexes.
+# and killing.  Never type in a PID again, just regexes!
 
 # -----------
 #   Globals
@@ -41,7 +41,7 @@ if ARGV.size > 1
 end
 
 # -------------------
-#   Remaaining Args
+#   Remaining Args
 # -------------------
 if ARGV.size != 1
 	usage
