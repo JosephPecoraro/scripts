@@ -1,0 +1,127 @@
+#!/usr/bin/env ruby
+# Author: Joseph Pecoraro
+# Date: Saturday December 13, 2008
+# Description: When I'm using ExpanDrive and I'm
+# remotely logged into a server, I can use this
+# script to "open filename" and it will open using
+# the server's associated URL.
+
+# For URL Escaping and Stored Mappings
+require 'uri'
+require 'yaml'
+
+# Exit with a msg
+def err(msg)
+	puts msg
+	exit 1
+end
+
+# Simple Class to handle the mappings
+class UrlMap
+	
+	MAP_PATH = File.expand_path('~/.util/expan/')
+	MAP_FILE = 'urlmap.yml'
+	MAP_FULL = MAP_PATH + '/' + MAP_FILE
+	
+	def initialize
+		@hash = load
+	end
+	
+	def load
+		`mkdir -p #{MAP_PATH}` unless File.exists?(MAP_PATH)
+		if File.exists?(MAP_FULL)
+			YAML::load_file( File.expand_path(MAP_FULL) )
+		else
+			Hash.new
+		end
+	end
+	
+	def add_mapping(server, mapto)
+		@hash[server] = mapto
+		File.open(MAP_FULL, 'w') do |file|
+			file.write(@hash.to_yaml)
+		end
+	end
+	
+	def is_mapping?(server)
+		@hash.has_key?(server)
+	end
+	
+	def get_mapping(server)
+		@hash[server]
+	end
+	
+	def path
+		MAP_FULL
+	end
+	
+end
+
+
+# Local Variables
+mapping = UrlMap.new
+url_prefix = nil
+server = nil
+volume = nil
+
+# Check the if the current directory is an
+# ExpanDrive Volume and a public_html folder
+pwd = `pwd`
+match = pwd.match(/^\/Volumes\/([^\/]+)/)
+if match.nil?
+	err("Not inside an ExpanDrive Voume")
+elsif !pwd.match(/\/public_html\/?/)
+	err("Not inside a public_html directory.")
+else
+	volume = match[1]
+	defaults = `defaults read com.magnetk.ExpanDrive`
+	defaults.gsub!(/\n/, '')
+	props = defaults.match(/\{[^\}]+driveName\s+=\s+#{volume}[^\}]+server\s+=\s+"([^"]+)"[^\}]+\}/)
+	if props
+		server = props[1]
+	else
+		err("This Volume (#{volume}) is not an ExpanDrive Volume")
+	end
+end
+
+# Check if a mapping exists
+# Otherwise create and store one
+if mapping.is_mapping?(server)
+	url_prefix = mapping.get_mapping(server)
+else
+	
+	# Prompt
+	puts
+	puts "This is the first time you've used expanurl for #{volume}"
+	puts "Please Provide us with a mapping for #{server}"
+	puts "Mappings are stored in #{mapping.path}"
+	puts "Example: http://bogojoker.com/"
+	print ">> "
+	
+	# Store user input and proceed
+	url_prefix = gets.chomp
+	url_prefix += '/' unless url_prefix.match(/\/$/)
+	mapping.add_mapping(server, url_prefix)
+	
+	# Terminal Output
+	puts
+	puts "Server: #{server}"
+	puts "Maps to: #{url_prefix}"
+	puts
+
+end
+
+# Build the URL
+subpath = pwd.match(/public_html\/?(.*)/)[1]
+subpath += '/' unless subpath.length.zero? || subpath.match(/\/$/)
+url_prefix += subpath
+
+# If No Files, open the directory
+# Otherwise,   open each provided file
+if ARGV.size == 0
+	`open #{url_prefix}`
+else
+	ARGV.each do |filename|
+		`open #{url_prefix}#{URI.escape(filename)}`
+	end
+end
