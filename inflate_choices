@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+# Date: Thursday May 29, 2008
+# Author: Joseph Pecoraro
+# Contact: joepeck02@gmail.com
+# Original Idea by defunkt - http://balloon.hobix.com/~defunkt 
+# Decription: Open or run a balloon.
+
+require 'open-uri'
+require 'rubygems'
+require '/Users/joe/code/choice/lib/choice'
+
+# Optional arg
+Choice.options do
+  destructive
+  
+  banner "Usage: #{$0.split(/\//).last} [-o] balloon"
+  header ''
+  header 'Options:'
+  
+  option :open do
+    short '-o'
+    long '--open'
+    desc 'open in browser, do not download'
+  end
+end
+
+# No args, print usage
+Choice.help if Choice.choices[:open].nil? && ARGV.empty?
+
+# Work it!
+url = 'http://balloon.hobix.com/'
+url += ARGV.shift unless ARGV.empty?
+if Choice.choices[:open]
+  `open #{url}`
+else
+  eval(open(url).read) rescue puts "** balloon not found"
+end
