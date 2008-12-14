@@ -74,7 +74,7 @@ elsif !pwd.match(/\/public_html\/?/)
 	err("Not inside a public_html directory.")
 else
 	volume = match[1]
-	defaults = `defaults read com.magnetk.ExpanDrive`
+	defaults = `defaults read com.magnetk.ExpanDrive Drives`
 	defaults.gsub!(/\n/, '')
 	props = defaults.match(/\{[^\}]+driveName\s+=\s+#{volume}[^\}]+server\s+=\s+"([^"]+)"[^\}]+\}/)
 	if props
