@@ -69,7 +69,7 @@ volume = nil
 pwd = `pwd`
 match = pwd.match(/^\/Volumes\/([^\/]+)/)
 if match.nil?
-	err("Not inside an ExpanDrive Voume")
+	err("Not inside an ExpanDrive Volume")
 elsif !pwd.match(/\/public_html\/?/)
 	err("Not inside a public_html directory.")
 else
