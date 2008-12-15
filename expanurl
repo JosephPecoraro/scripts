@@ -19,18 +19,15 @@ end
 # Simple Class to handle the mappings
 class UrlMap
 	
-	MAP_PATH = File.expand_path('~/.util/expan/')
-	MAP_FILE = 'urlmap.yml'
-	MAP_FULL = MAP_PATH + '/' + MAP_FILE
+	MAP_PATH = File.expand_path('~/.expanurl')
 	
 	def initialize
 		@hash = load
 	end
 	
 	def load
-		`mkdir -p #{MAP_PATH}` unless File.exists?(MAP_PATH)
-		if File.exists?(MAP_FULL)
-			YAML::load_file( File.expand_path(MAP_FULL) )
+		if File.exists?(MAP_PATH)
+			YAML::load_file( File.expand_path(MAP_PATH) )
 		else
 			Hash.new
 		end
@@ -38,7 +35,7 @@ class UrlMap
 	
 	def add_mapping(server, mapto)
 		@hash[server] = mapto
-		File.open(MAP_FULL, 'w') do |file|
+		File.open(MAP_PATH, 'w') do |file|
 			file.write(@hash.to_yaml)
 		end
 	end
@@ -52,7 +49,7 @@ class UrlMap
 	end
 	
 	def path
-		MAP_FULL
+		MAP_PATH
 	end
 	
 end
