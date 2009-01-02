@@ -1,0 +1,21 @@
+#!/bin/bash
+# Bash Script to download a given mp3
+
+# First argument is required
+if [ ! -n "$1" ]; then
+  echo "usage: `basename $0` url [name]"
+  exit $E_BADARGS
+fi
+
+# URL for the mp3
+url="$1"
+
+# Name of the file is provided or epoch of now.
+name=$2
+if [ ! -n "$2" ]; then
+	name=`ruby -e 'puts Time.now.to_i'`
+	# name=`perl -e 'printf"%d\n", time();'`
+fi
+
+# Download
+curl "$url" -o "$HOME/Desktop/$name.mp3"
