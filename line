@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+# Start Date: Sunday January 4, 2009
+# Current Version: 0.9
+# Author: Joseph Pecoraro
+# Contact: joepeck02@gmail.com
+# Decription: Grab certain lines of a file
+# with a simple syntax (see usage).
+
+# Wrapper around functionality
+class FileLines
+	
+	attr_accessor :lines
+
+	def initialize(filename)
+		@lines = File.readlines(filename)
+	end
+	
+	def parse(args)
+		args.each do |arg|
+			if m = arg.match( /^(\d+)-(\d+)/ )
+				lower = m[1].to_i
+				upper = m[2].to_i
+				lower = 1 if lower.zero? # 0 => 1
+				print_lines( lower-1, upper-lower+1 ) if upper >= lower
+			else
+				lineno = arg.to_i
+				lineno = 1 if lineno.zero? # 0 => 1
+				lineno = lineno-1 if lineno > 0 # Handle Negatives
+				print_line( lineno )
+			end
+			puts
+		end
+	end
+	
+	def print_lines(lower, upper)
+		i = lower
+		@lines[lower, upper].each do |line|
+			puts "[#{i+1}]: #{line}"
+			i += 1
+		end
+	end
+	
+	def print_line(line)
+		real = line>@lines.size ? @lines.size-1 : line
+		if line < 0
+			puts "[#{real}]: #{@lines[real]}"
+		else
+			puts "[#{real+1}]: #{@lines[real]}"
+		end
+	end
+
+end
+
+
+# When run as as script
+if $0 == __FILE__
+
+	# Check Cmd Line Args and Print Usage if needed
+	if ARGV.size <= 1
+		puts "usage: line filename numbers"
+		puts
+		puts " number formats:"
+		puts "   1-3    Prints lines 1 through 3"
+		puts "   5      Prints line 5"
+		puts "   -1     Prints the last line"
+		puts
+		exit 1
+		
+	# Unreadable File
+	elsif !File.readable?(ARGV[0])
+		puts "line: file '#{ARGV[0]}' did not exist or was unreadable."
+		exit 1
+	end
+
+	# Run the Program
+	puts
+	FileLines.new(ARGV[0]).parse(ARGV[1, ARGV.size])
+
+end
