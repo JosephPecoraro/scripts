@@ -27,6 +27,7 @@ class FileLines
 	end
 	
 	def parse(args)
+		puts unless @silent
 		args.each do |arg|
 			if m = arg.match( /^(\d+)-(\d+)/ )
 				lower = m[1].to_i
@@ -39,7 +40,7 @@ class FileLines
 				lineno = lineno-1 if lineno > 0 # Handle Negatives
 				print_line( lineno )
 			end
-			puts
+			puts unless @silent
 		end
 	end
 	
@@ -99,7 +100,6 @@ if $0 == __FILE__
 	end
 
 	# Run the Program
-	puts
 	FileLines.new(ARGV[0], options).parse(ARGV[1, ARGV.size])
 
 end
