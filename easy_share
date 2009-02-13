@@ -1,0 +1,56 @@
+#!/bin/bash
+# Start Date: Sunday February 8, 2009
+# Current Version: 0.9
+# Author: Joseph Pecoraro
+# Contact: joepeck02@gmail.com
+#
+# Decription:  Immediately Share the current directory
+#   in a new tab so you can monitor the requests made
+#   have your original tab to continue working in that
+#   directory.  Meant for Mac OS X.
+#
+#   1. Echos the URI
+#   2. Puts the URI into your Clipboard
+#   3. Opens a new tab in the terminal
+#   4. Changes Directory to the other tabs directory
+#   5. Echos the URI
+#   6. Runs the Web Server
+#   7. Optionally Opens in Safari
+#
+# Sources that Helped:
+#   New Tab Here: http://justinfrench.com/index.php?id=231
+#   HTTPServer:   http://www.commandlinefu.com/commands/view/71/
+#   Paul Berens:  http://zibundemo.blogspot.com/
+#
+
+# -----------------
+#   Host and Port
+# -----------------
+
+# This gets your ip address and converts it to a nice string
+es_host=$(curl --silent www.whatismyip.com/automation/n09230945.asp)
+es_host=$(nslookup $es_host | awk '/name =/{print substr($4,1,length($4)-1)}')
+es_port="8000"
+
+
+# -----------------
+#   Script Below
+# -----------------
+
+echo "http://$es_host:$es_port"
+echo -n "http://$es_host:$es_port" | pbcopy
+osascript -e "
+Tell application \"Terminal\"
+  activate
+  tell application \"System Events\" to tell process \"Terminal\" to keystroke \"t\" using command down
+  do script with command \"cd '$(pwd)'\" in selected tab of the front window
+  do script with command \"clear; echo '$es_host:$es_port/'\" in selected tab of the front window
+  do script with command \"python -m SimpleHTTPServer $es_port\" in selected tab of the front window
+end tell" &> /dev/null
+
+# Optional: Open Safari, Just Uncomment the next line
+# open "http://$es_host:$es_port"
+
+# Cleanup
+unset es_host
+unset es_port
