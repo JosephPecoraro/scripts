@@ -27,11 +27,17 @@
 #   Host and Port
 # -----------------
 
-# This gets your ip address and converts it to a nice string
-es_host=$(curl --silent www.whatismyip.com/automation/n09230945.asp)
-es_host=$(nslookup $es_host | awk '/name =/{print substr($4,1,length($4)-1)}')
-es_port="8000"
-
+# Mac Address of my Router At Home
+if [ -n "$(arp -a | grep 0:1e:2a:76:17:98)" ]; then
+	es_host="bogojoker.is-a-geek.com"
+  es_port="8000"
+  
+# Otherwise Dynamically Determine
+else
+  es_host=$(curl --silent www.whatismyip.com/automation/n09230945.asp)
+  es_host=$(nslookup $es_host | awk '/name =/{print substr($4,1,length($4)-1)}')
+  es_port="8000"
+fi
 
 # -----------------
 #   Script Below
