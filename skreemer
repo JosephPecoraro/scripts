@@ -54,8 +54,9 @@ class SkreemerShell
 				when 'o' then open(args)
 				when 'p' then past(args)
 				when 'h' then help
+				when 'u' then copy(args)
 				when 's' then search(args)
-				else puts "Bad Command\n\n"
+				else puts "Bad Command"
 			end
 			prompt
 		end
@@ -88,7 +89,15 @@ class SkreemerShell
 		empty_list_msg if @list.empty?
 		link = @list[ args[0].to_i ]
 		href = link['href']
-		system Escape.shell_command(["open", href]).to_s
+		system Escape.shell_command( ['open', href]) .to_s
+	end
+	
+	def copy(args)
+		empty_list_msg if @list.empty?
+		link = @list[ args[0].to_i ]
+		href = link['href']
+		IO.popen('pbcopy', 'w') { |io| io.write(href) }
+		puts "Copied to Clipboard"
 	end
 
 	def help
@@ -103,6 +112,7 @@ class SkreemerShell
 		puts '  p      --> past'
 		puts '  p #    --> search past'
 		puts '  q      --> quit'
+		puts '  u #    --> copy url to clipboard'
 		puts '  s STR  --> search'
 	end
 	
