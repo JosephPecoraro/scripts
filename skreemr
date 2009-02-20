@@ -1,0 +1,194 @@
+#!/usr/bin/env ruby
+# Author: Joseph Pecoraro
+# Date: Friday February 20, 2009
+# Description: Download MP3s from Skreemer
+
+require 'rubygems'
+require 'hpricot'
+require 'cgi'
+require 'open-uri'
+require File.dirname(__FILE__) + "/escape"
+
+class Skreemr
+	URI_PREFIX = 'http://skreemr.com/results.jsp?q='
+	PAGE_PREFIX = '&l=10&s='
+	PER_PAGE = 10
+	def query(str, start=1)
+		uri  = URI_PREFIX + CGI::escape(str)
+		uri += PAGE_PREFIX + (PER_PAGE*start).to_s if start > 0
+		doc = Hpricot( open(uri) )
+		(doc/'span.title').select { |a| a.inner_text =~ /File:/ }.inject([]) do |mem, span|
+			mem.push( span.next_sibling )
+		end
+	end
+end
+
+class SkreemrShell
+	
+	HISTORY_FILE = File.expand_path('~/.skreemr')
+	HOME = File.expand_path('~')
+
+	def initialize
+		@skreem = Skreemr.new
+		@query_string = ''
+		@list = []
+		@page = 0
+		puts
+		puts '---------------------'
+		puts '  Skreemr Mp3 Shell'
+		puts '---------------------'
+		load_history
+		prompt
+		await
+	end
+	
+	def prompt
+		puts
+		print '>> '
+		STDOUT.flush
+	end
+	
+	def await
+		while input = gets			
+			begin
+				puts
+				args = input.split
+				case args.shift
+					when 'c' then system 'clear'
+					when 'q' then break
+					when 'd' then download(args)
+					when 'o' then open(args)
+					when 'n' then next_page(args)
+					when 'p' then prev_page(args)
+					when 'b' then past(args)
+					when 'h' then help
+					when 'u' then copy(args)
+					when 's' then search(args)
+					else puts 'Bad Command.  Try `h` for help.'
+				end
+			rescue
+				puts 'Error with the last command.  Try `h` for help.'
+			end
+			prompt
+		end
+		write_history
+		puts
+	end
+	
+	def search(args)
+		@page = 0
+		@query_sting = args.join(' ')
+		append_to_history(@query_sting)
+		@list = @skreem.query(@query_sting)
+		print_list(@list)
+	end
+	
+	def next_page(args)
+		@page += 1
+		@list = @skreem.query(@query_sting, @page)
+		print_list(@list)
+	end
+
+	def prev_page(args)
+		@page -= 1
+		@page = 0 if @page < 0
+		@list = @skreem.query(@query_sting, @page)
+		print_list(@list)
+	end
+	
+	def download(args)
+		empty_list_msg if @list.empty?
+		args.each do |num|
+			elem = @list[ num.to_i ]
+			name = elem.inner_text.strip
+			link = elem['href']
+			name += File.extname(link)
+			system Escape.shell_command( ['curl', link, '-o', "#{HOME}/Desktop/#{name}"] ).to_s
+		end
+	end
+	
+	def open(args)
+		empty_list_msg if @list.empty?
+		link = @list[ args[0].to_i ]
+		href = link['href']
+		system Escape.shell_command( ['open', href] ).to_s
+	end
+	
+	def copy(args)
+		empty_list_msg if @list.empty?
+		link = @list[ args[0].to_i ]
+		href = link['href']
+		IO.popen('pbcopy', 'w') { |io| io.write(href) }
+		puts "Copied to Clipboard"
+	end
+
+	def help
+		puts '------------'
+		puts '  Commands'
+		puts '------------'
+		puts
+		puts '  s STR  --> search'
+		puts '  d #s   --> download to your desktop'
+		puts '  o #    --> open in browser'
+		puts '  u #    --> copy url to clipboard'
+		puts '  n      --> next page'
+		puts '  p      --> previous page'
+		puts '  c      --> clear screen'
+		puts '  h      --> help menu'
+		puts '  b      --> list past searches'
+		puts '  b #    --> repeat a past search'
+		puts '  q      --> quit'
+	end
+	
+	def past(args)		
+		if args.empty?
+			puts '-----------------'
+			puts '  Past Searches'
+			puts '-----------------'
+			puts
+			@history.each_with_index do |entry, i|
+				puts( "[%d]  %s" % [i, entry] )
+			end
+		else
+			search( [ @history[ args[0].to_i ] ] )
+		end
+	end
+		
+	private
+	
+	def empty_list_msg
+		puts 'Make a Search First!'
+	end
+	
+	def print_list(arr)
+		if arr.empty?
+			puts "No Results"
+		else
+			arr.each_with_index do |result, i|
+				puts( "[%d]  %s" % [i, result.inner_text.strip] )
+			end
+		end		
+	end
+	
+	def load_history
+		@history = File.exists?(HISTORY_FILE) ? File.readlines(HISTORY_FILE) : []
+	end
+
+	def append_to_history(q)
+		@history.push(q)
+		@history.shift while @history.size > 10
+	end
+	
+	def write_history
+		File.open( File.expand_path(HISTORY_FILE), 'w') do |f|
+			@history.each do |entry|
+				f.puts(entry)
+			end
+		end
+	end
+	
+end
+
+
+# Run the Shell!
+SkreemrShell.new 
