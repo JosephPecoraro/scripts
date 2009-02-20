@@ -1,0 +1,157 @@
+#!/usr/bin/env ruby
+# Author: Joseph Pecoraro
+# Date: Friday February 20, 2009
+# Description: Download MP3s from Skreemer
+
+require 'rubygems'
+require 'hpricot'
+require 'cgi'
+require 'open-uri'
+require File.dirname(__FILE__) + "/escape"
+
+class Skreem
+	URI_PREFIX = 'http://skreemr.com/results.jsp?q='
+	def query(str)
+		uri = URI_PREFIX + CGI::escape(str)
+		doc = Hpricot( open(uri) )
+		(doc/'span.title').select { |a| a.inner_text =~ /File:/ }.inject([]) do |mem, span|
+			mem.push( span.next_sibling )
+		end
+	end
+end
+
+class SkreemerShell
+	
+	HOME = File.expand_path('~')
+	HISTORY_FILE = File.expand_path('~/.skreemer')
+
+	def initialize
+		@skreem = Skreem.new
+		@list = []
+		load_history
+		puts
+		puts '----------------------'
+		puts '  Skreemer Mp3 Shell'
+		puts '----------------------'
+		prompt
+		await
+	end
+	
+	def prompt
+		puts
+		print '>> '
+		STDOUT.flush
+	end
+	
+	def await
+		while input = gets
+			puts
+			args = input.split
+			case args.shift
+				when 'c' then system 'clear'
+				when 'q' then leave
+				when 'd' then download(args)
+				when 'o' then open(args)
+				when 'p' then past(args)
+				when 'h' then help
+				when 's' then search(args)
+				else puts "Bad Command\n\n"
+			end
+			prompt
+		end
+	end
+	
+	def search(args)
+		str = args.join(' ')
+		append_to_history(str)
+		@list = @skreem.query(str)
+		if @list.empty?
+			puts "No Results"
+		else
+			@list.each_with_index do |result, i|
+				puts( "[%d]  %s" % [i, result.inner_text.strip] )
+			end
+		end
+	end
+	
+	def download(args)
+		empty_list_msg if @list.empty?
+		args.each do |num|
+			elem = @list[ num.to_i ]
+			name = elem.inner_text.strip
+			link = elem['href']
+			system Escape.shell_command( ['curl', link, '-o', "#{HOME}/Desktop/#{name}.mp3"] ).to_s
+		end
+	end
+	
+	def open(args)
+		empty_list_msg if @list.empty?
+		link = @list[ args[0].to_i ]
+		href = link['href']
+		system Escape.shell_command(["open", href]).to_s
+	end
+
+	def help
+		puts '------------'
+		puts '  Commands'
+		puts '------------'
+		puts
+		puts '  c      --> clear'
+		puts '  d #s   --> download'
+		puts '  h      --> help'
+		puts '  o #    --> open'
+		puts '  p      --> past'
+		puts '  p #    --> search past'
+		puts '  q      --> quit'
+		puts '  s STR  --> search'
+	end
+	
+	def leave
+		write_history
+		puts "Good Bye"
+		puts
+		exit
+	end
+	
+	def past(args)		
+		if args.empty?
+			puts '-----------------'
+			puts '  Past Searches'
+			puts '-----------------'
+			puts
+			@history.each_with_index do |result, i|
+				puts( "[%d]  %s" % [i, @history[i]] )
+			end
+		else
+			search( [ @history[ args[0].to_i ] ] )
+		end
+	end
+	
+	def empty_list_msg
+		puts 'Make a Search First!'
+	end
+	
+	private
+	
+	def load_history
+		@history = File.exists?(HISTORY_FILE) ? File.readlines(HISTORY_FILE) : []
+	end
+
+	def append_to_history(q)
+		@history.push(q)
+		@history.shift while @history.size > 10
+	end
+	
+	def write_history
+		File.open( File.expand_path(HISTORY_FILE), 'w') do |f|
+			@history.each do |entry|
+				f.puts(entry)
+			end
+		end
+	end
+	
+end
+
+
+# Run the Shell!
+SkreemerShell.new 
