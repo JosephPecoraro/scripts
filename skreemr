@@ -10,13 +10,14 @@ require 'open-uri'
 require File.dirname(__FILE__) + "/escape"
 
 class Skreemr
+	MAGIC = { "Accept-Language" => 'en-us' }
 	URI_PREFIX = 'http://skreemr.com/results.jsp?q='
 	PAGE_PREFIX = '&l=10&s='
 	PER_PAGE = 10
-	def query(str, start=1)
+	def query(str, start=0)
 		uri  = URI_PREFIX + CGI::escape(str)
 		uri += PAGE_PREFIX + (PER_PAGE*start).to_s if start > 0
-		doc = Hpricot( open(uri) )
+		doc = Hpricot( open(uri, MAGIC).read )
 		(doc/'span.title').select { |a| a.inner_text =~ /File:/ }.inject([]) do |mem, span|
 			mem.push( span.next_sibling )
 		end
