@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # Author: Joseph Pecoraro
+# Contributor: Michael Fellinger (manveru)
 # Date: Friday February 20, 2009
 # Description: Download MP3s from Skreemer
 
@@ -7,6 +8,7 @@ require 'rubygems'
 require 'hpricot'
 require 'cgi'
 require 'open-uri'
+require 'readline'
 require File.dirname(__FILE__) + "/escape"
 
 class Skreemr
@@ -39,20 +41,19 @@ class SkreemrShell
 		puts '  Skreemr Mp3 Shell'
 		puts '---------------------'
 		load_history
-		prompt
 		await
 	end
 	
 	def prompt
 		puts
-		print '>> '
-		STDOUT.flush
+		Readline::readline('>> ')
 	end
 	
 	def await
-		while input = gets			
+		while input = prompt
 			begin
 				puts
+				Readline::HISTORY.push(input)
 				args = input.split
 				case args.shift
 					when 'c' then system 'clear'
@@ -70,7 +71,6 @@ class SkreemrShell
 			rescue
 				puts 'Error with the last command.  Try `h` for help.'
 			end
-			prompt
 		end
 		write_history
 		puts
