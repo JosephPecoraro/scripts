@@ -2,7 +2,7 @@
 # Author: Joseph Pecoraro
 # Contributor: Michael Fellinger (manveru)
 # Date: Friday February 20, 2009
-# Description: Download MP3s from Skreemer
+# Description: Download MP3s from Skreemr
 
 require 'rubygems'
 require 'hpricot'
