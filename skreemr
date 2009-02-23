@@ -9,10 +9,10 @@ require 'hpricot'
 require 'cgi'
 require 'open-uri'
 require 'readline'
-require File.dirname(__FILE__) + "/escape"
+require File.dirname(__FILE__) + '/escape'
 
 class Skreemr
-	MAGIC = { "Accept-Language" => 'en-us' }
+	MAGIC = { 'Accept-Language' => 'en-us' }
 	URI_PREFIX = 'http://skreemr.com/results.jsp?q='
 	PAGE_PREFIX = '&l=10&s='
 	PER_PAGE = 10
@@ -27,13 +27,14 @@ class Skreemr
 end
 
 class SkreemrShell
-	
+
 	HISTORY_FILE = File.expand_path('~/.skreemr')
 	HOME = File.expand_path('~')
 
 	def initialize
 		@skreem = Skreemr.new
 		@query_string = ''
+		@history = []
 		@list = []
 		@page = 0
 		puts
@@ -43,17 +44,16 @@ class SkreemrShell
 		load_history
 		await
 	end
-	
+
 	def prompt
 		puts
-		Readline::readline('>> ')
+		Readline::readline('>> ', true)
 	end
-	
+
 	def await
 		while input = prompt
 			begin
 				puts
-				Readline::HISTORY.push(input)
 				args = input.split
 				case args.shift
 					when 'c' then system 'clear'
@@ -75,15 +75,14 @@ class SkreemrShell
 		write_history
 		puts
 	end
-	
+
 	def search(args)
 		@page = 0
 		@query_sting = args.join(' ')
-		append_to_history(@query_sting)
 		@list = @skreem.query(@query_sting)
 		print_list(@list)
 	end
-	
+
 	def next_page(args)
 		@page += 1
 		@list = @skreem.query(@query_sting, @page)
@@ -96,7 +95,7 @@ class SkreemrShell
 		@list = @skreem.query(@query_sting, @page)
 		print_list(@list)
 	end
-	
+
 	def download(args)
 		empty_list_msg if @list.empty?
 		args.each do |num|
@@ -107,20 +106,20 @@ class SkreemrShell
 			system Escape.shell_command( ['curl', link, '-o', "#{HOME}/Desktop/#{name}"] ).to_s
 		end
 	end
-	
+
 	def open(args)
 		empty_list_msg if @list.empty?
 		link = @list[ args[0].to_i ]
 		href = link['href']
 		system Escape.shell_command( ['open', href] ).to_s
 	end
-	
+
 	def copy(args)
 		empty_list_msg if @list.empty?
 		link = @list[ args[0].to_i ]
 		href = link['href']
 		IO.popen('pbcopy', 'w') { |io| io.write(href) }
-		puts "Copied to Clipboard"
+		puts 'Copied to Clipboard'
 	end
 
 	def help
@@ -140,56 +139,69 @@ class SkreemrShell
 		puts '  b #    --> repeat a past search'
 		puts '  q      --> quit'
 	end
-	
-	def past(args)		
+
+	def past(args)
 		if args.empty?
 			puts '-----------------'
 			puts '  Past Searches'
 			puts '-----------------'
 			puts
-			@history.each_with_index do |entry, i|
+			load_past
+			@history.reverse!.each_with_index do |entry, i|
 				puts( "[%d]  %s" % [i, entry] )
 			end
 		else
 			search( [ @history[ args[0].to_i ] ] )
 		end
 	end
-		
+
 	private
-	
+
 	def empty_list_msg
 		puts 'Make a Search First!'
 	end
 	
+	def load_past
+		@history = []
+		for entry in Readline::HISTORY.to_a.reverse
+			if m=entry.match( /^s\s+(.*)$/ )
+				@history.push(m[1])
+				break if @history.size > 10
+			end
+		end
+	end
+
 	def print_list(arr)
 		if arr.empty?
-			puts "No Results"
+			puts 'No Results'
 		else
 			arr.each_with_index do |result, i|
 				puts( "[%d]  %s" % [i, result.inner_text.strip] )
 			end
-		end		
-	end
-	
-	def load_history
-		@history = File.exists?(HISTORY_FILE) ? File.readlines(HISTORY_FILE) : []
+		end
 	end
 
-	def append_to_history(q)
-		@history.push(q)
-		@history.shift while @history.size > 10
+	def load_history
+		if File.exists?(HISTORY_FILE)
+			File.readlines(HISTORY_FILE).each do |entry|
+				Readline::HISTORY.push(entry)
+			end
+		end
+		load_past
 	end
-	
+
 	def write_history
+		hist = Readline::HISTORY.to_a
+		hist = hist[-10, 10] if hist.size > 10
 		File.open( File.expand_path(HISTORY_FILE), 'w') do |f|
-			@history.each do |entry|
+			hist.each do |entry|
 				f.puts(entry)
 			end
 		end
 	end
-	
+
 end
 
 
 # Run the Shell!
-SkreemrShell.new 
+SkreemrShell.new
