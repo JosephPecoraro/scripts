@@ -1,0 +1,26 @@
+#!/bin/bash
+# Author: Joseph Pecoraro
+# Date: Wednesday February 25, 2009
+# Description: Super-Quick stub for a new project!
+
+# Expects an string for a folder name
+if [ ! -n "$1" ]; then
+  echo "Usage: `basename $0` name"
+  exit 1
+fi
+
+# Vars
+name=$1
+htdocs='/Applications/MAMP/htdocs/'
+templatename='TEMPLATE'
+
+# 1. The Dir Doesnt Exist, Create it from the Template
+if [ ! -e "$htdocs$name" ]; then
+  echo "Creating $htdocs$name ..."
+  cp -R "$htdocs$templatename" "$htdocs$name"
+fi
+
+# 2. Open in Finder and TextMate
+echo "Opening $htdocs$name ..."
+/usr/bin/env open "$htdocs$name"
+/usr/bin/env mate "$htdocs$name"
