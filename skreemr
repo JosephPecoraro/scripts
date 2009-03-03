@@ -12,22 +12,46 @@ require 'readline'
 require File.dirname(__FILE__) + '/escape'
 
 class Skreemr
+
+	attr_reader :results, :hrefs
 	MAGIC = { 'Accept-Language' => 'en-us' }
 	URI_PREFIX = 'http://skreemr.com/results.jsp?q='
 	PAGE_PREFIX = '&l=10&s='
 	PER_PAGE = 10
-	def query(str, start=0)
+	
+	def url(str, start=0)
+		return URI_PREFIX if str.nil?
 		uri  = URI_PREFIX + CGI::escape(str)
 		uri += PAGE_PREFIX + (PER_PAGE*start).to_s if start > 0
+		uri
+	end
+	
+	def query(str, start=0)
+		uri = url(str, start)
 		doc = Hpricot( open(uri, MAGIC).read )
-		(doc/'span.title').select { |a| a.inner_text =~ /File:/ }.inject([]) do |mem, span|
-			mem.push( span.next_sibling )
+		@results = []; @hrefs = []
+		details = nil; file = nil
+		(doc/'span.title').each do |span|
+			if file.nil? && span.inner_text =~ /File:/
+				@hrefs.push(span.next_sibling)
+				file = span.next_sibling.inner_text.strip
+			elsif details.nil? && span.inner_text =~ /Details:/
+				details = span.parent.inner_text.strip
+				details.gsub!(/Details:.*?\-/,'').gsub!(/\s+/,' ').strip!
+				details.gsub!(/\d{2}:(\d\d:\d\d)/,'\1')
+			end
+			if !file.nil? && !details.nil?
+				@results.push( file + ' (' + details + ')' )
+				details = nil; file = nil
+			end
 		end
+		@results
 	end
 end
 
 class SkreemrShell
 
+	HISTORY_SIZE = 10
 	HISTORY_FILE = File.expand_path('~/.skreemr')
 	HOME = File.expand_path('~')
 
@@ -56,24 +80,32 @@ class SkreemrShell
 				puts
 				args = input.split
 				case args.shift
-					when 'c' then system 'clear'
-					when 'q' then break
-					when 'd' then download(args)
-					when 'o' then open(args)
-					when 'n' then next_page(args)
-					when 'p' then prev_page(args)
-					when 'b' then past(args)
-					when 'h' then help
-					when 'u' then copy(args)
-					when 's' then search(args)
+					when 'c', 'clear'           then system 'clear'
+					when 'q', 'quit'            then break
+					when 'd', 'download'        then download(args)
+					when 'o', 'open'            then open(args)
+					when 'n', 'next'            then next_page(args)
+					when 'p', 'prev'            then prev_page(args)
+					when 'b', 'past', 'history' then past(args)
+					when 'h', 'help'            then help
+					when 'u', 'url'             then copy(args)
+					when 's', 'search'          then search(args)
+					when 'k', 'skreemr'         then skreemr
+					when 'i', 'itunes'          then itunes(args)
 					else puts 'Bad Command.  Try `h` for help.'
 				end
-			rescue
+			rescue Exception => e
 				puts 'Error with the last command.  Try `h` for help.'
+				puts e.to_s
 			end
 		end
 		write_history
 		puts
+	end
+	
+	def skreemr
+		url = @skreem.url(@query_sting, @page)
+		system Escape.shell_command( ['open', url] ).to_s
 	end
 
 	def search(args)
@@ -99,7 +131,7 @@ class SkreemrShell
 	def download(args)
 		empty_list_msg if @list.empty?
 		args.each do |num|
-			elem = @list[ num.to_i ]
+			elem = @skreem.hrefs[ num.to_i ]
 			name = elem.inner_text.strip
 			link = elem['href']
 			name += File.extname(link)
@@ -108,18 +140,31 @@ class SkreemrShell
 	end
 
 	def open(args)
-		empty_list_msg if @list.empty?
-		link = @list[ args[0].to_i ]
-		href = link['href']
-		system Escape.shell_command( ['open', href] ).to_s
+		if @list.empty?
+			empty_list_msg
+		else
+			p 'else'
+			link = @skreem.hrefs[ args[0].to_i ]
+			href = link['href']
+			system Escape.shell_command( ['open', href] ).to_s
+		end
 	end
 
 	def copy(args)
-		empty_list_msg if @list.empty?
-		link = @list[ args[0].to_i ]
-		href = link['href']
-		IO.popen('pbcopy', 'w') { |io| io.write(href) }
-		puts 'Copied to Clipboard'
+		if @list.empty?
+			empty_list_msg
+		else
+			link = @skreem.hrefs[ args[0].to_i ]
+			href = link['href']
+			IO.popen('pbcopy', 'w') { |io| io.write(href) }
+			puts 'Copied to Clipboard'
+		end
+	end
+	
+	def itunes(args)
+		url = 'itms://phobos.apple.com/WebObjects/MZSearch.woa/wa/advancedSearchResults?term='
+		url += CGI::escape(@query_sting)
+		system Escape.shell_command( ['open', url] ).to_s
 	end
 
 	def help
@@ -127,17 +172,19 @@ class SkreemrShell
 		puts '  Commands'
 		puts '------------'
 		puts
-		puts '  s STR  --> search'
-		puts '  d #s   --> download to your desktop'
-		puts '  o #    --> open in browser'
-		puts '  u #    --> copy url to clipboard'
-		puts '  n      --> next page'
-		puts '  p      --> previous page'
-		puts '  c      --> clear screen'
-		puts '  h      --> help menu'
-		puts '  b      --> list past searches'
-		puts '  b #    --> repeat a past search'
-		puts '  q      --> quit'
+		puts '  s STR | search          --> search'
+		puts '  k     | skreemr         --> open the skreemr website'
+		puts '  d #s  | download        --> download to your desktop'
+		puts '  o #   | open            --> open in browser'
+		puts '  u #   | url             --> copy url to clipboard'
+		puts '  n     | next            --> next page'
+		puts '  p     | prev            --> previous page'
+		puts '  c     | clear           --> clear screen'
+		puts '  h     | help            --> help menu'
+		puts '  i     | itunes          --> search iTunes'
+		puts '  b     | past | history  --> list past searches'
+		puts '  b #   | past | history  --> repeat a past search'
+		puts '  q     | quit            --> quit'
 	end
 
 	def past(args)
@@ -166,7 +213,7 @@ class SkreemrShell
 		Readline::HISTORY.to_a.reverse.each do |entry|
 			if m = entry.match( /^s\s+(.*)$/ )
 				@history.push(m[1])
-				break if @history.size >= 10
+				break if @history.size >= HISTORY_SIZE
 			end
 		end
 	end
@@ -176,7 +223,7 @@ class SkreemrShell
 			puts 'No Results'
 		else
 			arr.each_with_index do |result, i|
-				puts( "[%d]  %s" % [i, result.inner_text.strip] )
+				puts( "[%d]  %s" % [i, result] )
 			end
 		end
 	end
@@ -192,7 +239,7 @@ class SkreemrShell
 
 	def write_history
 		hist = Readline::HISTORY.to_a
-		hist = hist[-10, 10] if hist.size > 10
+		hist = hist[-HISTORY_SIZE, HISTORY_SIZE] if hist.size > HISTORY_SIZE
 		File.open( File.expand_path(HISTORY_FILE), 'w') do |f|
 			hist.each do |entry|
 				f.puts(entry)
@@ -202,6 +249,34 @@ class SkreemrShell
 
 end
 
+
+# ---------------------------
+#   Completion Enhancements
+# ---------------------------
+
+# Ignore the ^C Interrupt
+trap('INT', 'SIG_IGN')
+
+SUBCOMMANDS = [
+	'search', 'skreemr',
+	'download',
+	'open',
+	'url',
+	'next',
+	'prev', 'past',
+	'clear',
+	'help', 'history',
+	'itunes',
+	'quit'
+].sort.collect { |i| i+=' ' }
+
+def sub_list(lst, str)
+	return SUBCOMMANDS if lst.nil?
+	lst.grep(/^#{Regexp.escape(str)}/)
+end
+
+Readline.completion_append_character = " "
+Readline.completion_proc = proc { |s| sub_list(SUBCOMMANDS, s) }
 
 # Run the Shell!
 SkreemrShell.new
