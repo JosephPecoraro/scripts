@@ -18,6 +18,9 @@ templatename='TEMPLATE'
 if [ ! -e "$htdocs$name" ]; then
   echo "Creating $htdocs$name ..."
   cp -R "$htdocs$templatename" "$htdocs$name"
+  rm -rf "$htdocs$name/.git"
+  rm "$htdocs$name/README.markdown"
+  rm "$htdocs$name/proj"
 fi
 
 # 2. Open in Finder and TextMate
