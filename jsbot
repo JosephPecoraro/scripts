@@ -1,0 +1,151 @@
+#!/usr/bin/env ruby
+# Author: Joseph Pecoraro
+# Date: Friday March 6, 2009
+# Description: Simple Interface for the
+# really neat jsbot!
+
+require 'rubygems'
+require 'open-uri'
+require 'json'
+require 'cgi'
+require File.dirname(__FILE__) + '/escape'
+
+
+class JSBot
+
+	JSON_PREFIX = 'http://fn-js.info/jsbot.xhr?'
+	SITE_PREFIX = 'http://js.isite.net.au/jsbot?'
+
+	def search(str)
+		uri = url(str, JSON_PREFIX, "search=")
+		JSON.parse( open( uri ).read )
+	end
+
+	def show(str)
+		uri = url(str, JSON_PREFIX, "show=")
+		JSON.parse( open( uri ).read )
+	end
+
+	def url(str, u=SITE_PREFIX, q='q=')
+		u + q + CGI::escape(str)
+	end
+
+end
+
+
+class JSBotDriver
+
+	URL_REGEX   = /(?:http|https):\/\/[a-z0-9]+(?:[\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(?:\:[0-9]{1,5})?(?:\/.*?)?(?=\s|$|[\)\],])/ix
+	MAX_LENGTH  = 80 - '99: '.length
+	MAX_RESULTS = 15
+
+	def initialize(args)
+		@bot = JSBot.new
+		query(args)
+		puts
+	end
+
+	def query(args)
+
+		mode = :show
+		args.each_index do |i|
+			arg = ARGV[i]
+			if arg =~ /^-l$|^--(list|search)$/
+				mode = :list
+				args[i] = nil
+			elsif arg =~ /^-s$|^--show$/
+				mode = :show
+				args[i] = nil
+			elsif arg =~ /^-o$|^--open$/
+				mode = :open
+				args[i] = nil
+			else
+				break
+			end
+		end
+
+		args.delete_if { |elem| elem.nil? }
+		usage if args.size < 1
+		str = args.join(' ')
+		case mode
+			when :show then show(str)
+			when :open then page(str)
+			when :list then list(str)
+		end
+
+	end
+
+	def list(str)
+
+		num_regex = /\s+(\d+)$/
+		is_num = false
+		if match = str.match(num_regex)
+			is_num = true
+			num = match[1].to_i
+			str.sub!(num_regex, '')
+		end
+
+		puts
+		results = @bot.search(str)
+		if is_num
+			print_result( results[num] )
+		elsif results.size == 0
+			puts 'No Results Found.'
+		else
+			results.each_with_index do |elem, i|
+				term = elem['term']
+				value = elem['value'].gsub(URL_REGEX,'--URL--')[0, MAX_LENGTH-term.length]
+				puts( '%2d: %s - %s' % [ i, term, value ] )
+				break if i >= MAX_RESULTS
+			end
+		end
+
+	end
+
+	def show(str)
+		elem = @bot.show(str)
+		print_result( elem )
+	end
+
+	def page(str)
+		system Escape.shell_command( ['open', @bot.url(str)] ).to_s
+	end
+
+	def print_result(elem)
+		puts
+		if elem.nil? || elem=={}
+			puts 'No Results Found'
+		else
+			hrefs = elem['value'].scan(URL_REGEX)
+			puts 'Response: '
+			puts "#{elem['term']} - #{elem['value']}"
+			if hrefs.size > 0
+				puts
+				puts 'Opening...'
+				hrefs.each do |href|
+					puts href
+					system Escape.shell_command( ['open', href] ).to_s
+				end
+			end
+		end
+	end
+
+	def usage
+		puts 'usage: jsbot [options] term [#]'
+		puts
+		puts 'options:'
+		puts '  --show | -s              open the top result [default]'
+		puts '  --open | -o              go to the jsbot results page'
+		puts '  --list | -l | --search   show top 15 results'
+		puts '  --list ... #             open the #\'d result'
+		puts
+		puts 'term examples:'
+		puts '  dom ref'
+		puts '  js ref ceil'
+		puts
+		exit
+	end
+
+end
+
+JSBotDriver.new( ARGV )
