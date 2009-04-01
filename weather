@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'hpricot'
+require 'open-uri'
+
+url = 'http://thefuckingweather.com/'
+str = (Hpricot(open(url))/'.large').html.strip.sub('&deg;','º')
+puts str.gsub(/<[^>]+>/,'#').gsub(/#+/, ' - ').sub(/\s+\-\s+$/,'')
