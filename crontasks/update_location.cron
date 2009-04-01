@@ -1,0 +1,38 @@
+#!/bin/bash
+# Start Date: Wednesday April 1, 2009
+# Current Version: 0.9
+# Author: Joseph Pecoraro
+# Contributor: Sean McDermott - RIT Host Idea
+# Contact: joepeck02@gmail.com
+# Decription: Store my location in a file that
+# any other script of mine can access!
+
+# Debug mode just means provide any cmd-line argument
+DEBUG=$1
+
+# My Location Storing File
+LOCATION_FILE='/Users/joe/.location'
+
+# Used for School comparison
+day_hour=`/bin/date +"%A %H"`
+	
+# Mac Address of my Router At Home
+if [ -n "$(/usr/sbin/arp -a | /usr/bin/grep 0:1e:2a:76:17:98)" ]; then
+	[ -n "$DEBUG" ] && echo 'home'
+	echo "home" > $LOCATION_FILE
+
+# Monday and Wednesday Classes and Times
+elif [ -n "`echo {Monday\ {12,13,16,17},Wednesday\ {12,13,16,17}} | /usr/bin/grep \"$day_hour\"`" ]; then
+	[ -n "$DEBUG" ] && echo 'class'
+	echo "class" > $LOCATION_FILE
+
+# RIT Hostname should only exist when at rit
+elif [ "0" -ne "$(/sbin/ping -c 1 jpecoraro.rit.edu | wc -l | tr -d ' ')" ]; then
+	[ -n "$DEBUG" ] && echo 'rit'
+	echo "rit" > $LOCATION_FILE
+
+# Default
+else
+	[ -n "$DEBUG" ] && echo 'unknown'
+	echo "unknown" > $LOCATION_FILE
+fi
