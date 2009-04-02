@@ -27,20 +27,20 @@ fi
 # Mac Address of my Router At Home
 if [ "$LOCATION" = "home" ]; then
 	[ -n "$DEBUG" ] && echo '@Home'
-	/usr/bin/osascript -e 'tell application "Adium" to go online with message "@Home (testing applescript)"'
+	/usr/bin/osascript -e 'tell application "Adium" to go online with message "@Home"'
 
 # Monday and Wednesday Classes and Times
 elif [ "$LOCATION" = "class" ]; then
 	[ -n "$DEBUG" ] && echo '@Class'
-	/usr/bin/osascript -e 'tell application "Adium" to go away with message "@Class (testing applescript)"'
+	/usr/bin/osascript -e 'tell application "Adium" to go away with message "@Class"'
 
 # RIT Hostname should only exist when at rit
 elif [ "$LOCATION" = "rit" ]; then
 	[ -n "$DEBUG" ] && echo '@RIT'
-	/usr/bin/osascript -e 'tell application "Adium" to go online with message "@RIT (testing applescript)"'	
+	/usr/bin/osascript -e 'tell application "Adium" to go online with message "@RIT"'	
 
 # Default
 else
 	[ -n "$DEBUG" ] && echo '@Unknown'
-	/usr/bin/osascript -e 'tell application "Adium" to go online with message "@Unknown (testing applescript)"'	
+	/usr/bin/osascript -e 'tell application "Adium" to go online with message "@Unknown"'	
 fi
