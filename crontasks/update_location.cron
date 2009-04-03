@@ -27,7 +27,10 @@ elif [ -n "`echo {Monday\ {12,13,16,17},Wednesday\ {12,13,16,17}} | /usr/bin/gre
 	echo "class" > $LOCATION_FILE
 
 # RIT Hostname should only exist when at rit
-elif [ "0 packets received" != "$(/sbin/ping -c 1 -t 2 jpecoraro.rit.edu | grep -E -o '[0-9]+ packets received')" ]; then
+elif [ "0 packets received" != "$(/sbin/ping -c 1 -t 2 jpecoraro.rit.edu 2> /dev/null \
+                                    | cat - <(echo '0 packets received')              \
+                                    | grep -E -o '[0-9]+ packets received'            \
+                                    | head -1)" ]; then
 	[ -n "$DEBUG" ] && echo 'rit'
 	echo "rit" > $LOCATION_FILE
 
