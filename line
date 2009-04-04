@@ -1,19 +1,29 @@
 #!/usr/bin/env ruby
 # Start Date: Sunday January 4, 2009
-# Current Version: 0.99
+# Current Version: 1
 # Author: Joseph Pecoraro
 # Contact: joepeck02@gmail.com
 # Decription: Grab certain lines of a file
 # with a simple syntax (see usage). Silent
-# usage useful for piping output.
+# usage useful for piping output and Pipe
+# option for piping input into it
 
 # Wrapper around functionality
 class FileLines
 	
-	attr_accessor :lines
-
-	def initialize(filename, options)
-		@lines = File.readlines(filename)
+	attr_accessor :lines, :stdin
+	
+	def initialize(options, filename=nil)
+		if filename.nil?
+			@stdin = true
+			@lines = []
+			while line = STDIN.gets
+				@lines << line
+			end
+		else
+			@stdin = false
+			@lines = File.readlines(filename)
+		end
 		@silent = false
 		parse_options(options)
 	end
@@ -27,11 +37,14 @@ class FileLines
 	end
 	
 	def parse(args)
-		puts unless @silent
 		args.each do |arg|
 			
+			# String: all
+			if m = arg.match( /^all$/ )
+				print_lines(0, @lines.size)
+			
 			# Ranges: 3-7
-			if m = arg.match( /^(\d+)-(\d+)$/ )
+			elsif m = arg.match( /^(\d+)-(\d+)$/ )
 				lower = m[1].to_i
 				upper = m[2].to_i
 				lower = 1 if lower.zero? # 0 => 1
@@ -73,11 +86,11 @@ class FileLines
 				print_line( lineno )
 			end
 
-			puts unless @silent
 		end
 	end
 	
 	def print_lines(lower, upper)
+		return if lower > @lines.size
 		i = lower
 		@lines[lower, upper].each do |line|
 			if @silent
@@ -141,9 +154,12 @@ if $0 == __FILE__
 	# Pull out the Options
 	options = ARGV.select { |arg| arg.match(/-[a-z]/i) }
 	ARGV.delete_if { |arg| arg.match(/-[a-z]/i) }
+	
+	# Special Handling for Pipes (don't require a filename)
+	is_pipe = !STDIN.tty?
 
 	# Check Cmd Line Args and Print Usage if needed
-	if ARGV.size <= 1
+	if ARGV.size <= 1 && !is_pipe
 		puts "usage: line [options] filename numbers"
 		puts
 		puts " options:"
@@ -155,6 +171,7 @@ if $0 == __FILE__
 		puts "   -1               Prints the last line, (negative)"
 		puts
 		puts " extra formats:"
+		puts "   all              Prints out all lines"
 		puts "   ~5               Prints 2 (default) lines before and after 5"
 		puts "   4~10             Prints 4 lines before and after 10"
 		puts "   *7 or 8*         Prints all lines before or after the number"
@@ -162,14 +179,20 @@ if $0 == __FILE__
 		puts "   2:5/1            Starts at line 2, prints and skips..."
 		puts
 		exit 1
+	end
 		
+	# Pipe Usage
+	if is_pipe
+		FileLines.new(options).parse(ARGV)		
+	
 	# Unreadable File
 	elsif !File.readable?(ARGV[0])
 		puts "line: file '#{ARGV[0]}' did not exist or was unreadable."
 		exit 1
-	end
 
 	# Run the Program
-	FileLines.new(ARGV[0], options).parse(ARGV[1, ARGV.size])
+	else
+		FileLines.new(options, ARGV[0]).parse(ARGV[1, ARGV.size])
+	end
 
 end

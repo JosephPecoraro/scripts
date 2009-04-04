@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+# Author: Joseph Pecoraro
+# Date: Saturday April 4, 2009
+# Description: Opposite of Head.
+# Removes the first -n lines.
+
+# Line to trim up to
+limit = 0
+
+# Get a Command line Limit
+ARGV.each do |arg|
+	if matches = arg.match( /^-(\d+)$/ )
+		limit = matches[1].to_i
+	end
+end
+
+
+# Remove Command Line Args
+ARGV.delete_if { |arg| arg.match(/^-\d+$/) }
+
+# Print Lines from STDIN
+if ARGV.size == 0
+	
+	# Skip Lines
+	while limit > 0
+		limit -= 1
+		gets
+	end
+	
+	# Print Loop
+	while ( line = gets )
+		puts line
+	end
+		
+# Print Lines from a File
+else
+
+	ARGV.each do |filename|
+		lines = File.readlines(filename)
+		lines.slice!(0, limit)
+		lines.each { |l| puts l }
+	end
+	
+end
