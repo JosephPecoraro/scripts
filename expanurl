@@ -9,11 +9,34 @@
 # For URL Escaping and Stored Mappings
 require 'uri'
 require 'yaml'
+require 'optparse'
+
+# Parse potential command line arguments
+$options = { :url => false }
+OptionParser.new do |opts|
+	opts.banner = 'usage: expanurl [option] [files]'
+	opts.on("-u", "--url", "Print the URL that would have been used.") do |u|
+		$options[:url] = u
+	end
+	opts.on_tail("-h", "--help", "Show this message") do
+		puts opts
+		exit
+	end
+end.parse!
 
 # Exit with a msg
 def err(msg)
 	puts msg
 	exit 1
+end
+
+# Properly open/print a url
+def handle_url(url)
+	if $options[:url]
+		puts url
+	else
+		`open #{url}`
+	end
 end
 
 # Simple Class to handle the mappings
@@ -116,9 +139,9 @@ url_prefix += subpath
 # If No Files, open the directory
 # Otherwise,   open each provided file
 if ARGV.size == 0
-	`open #{url_prefix}`
+	handle_url( url_prefix )
 else
 	ARGV.each do |filename|
-		`open #{url_prefix}#{URI.escape(filename)}`
+		handle_url( "#{url_prefix}#{URI.escape(filename)}" )
 	end
 end
