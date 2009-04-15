@@ -10,7 +10,7 @@
 #   Globals
 # -----------
 kill_mode = false
-icase_mode = false
+icase_mode = true
 pattern = nil
 targets = []
 pids = []

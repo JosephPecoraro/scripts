@@ -5,7 +5,7 @@
 
 # Expects an string for a folder name
 if [ ! -n "$1" ]; then
-  echo "Usage: `basename $0` name"
+  echo "usage: `basename $0` name"
   exit 1
 fi
 

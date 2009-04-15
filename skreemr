@@ -143,7 +143,6 @@ class SkreemrShell
 		if @list.empty?
 			empty_list_msg
 		else
-			p 'else'
 			link = @skreem.hrefs[ args[0].to_i ]
 			href = link['href']
 			system Escape.shell_command( ['open', href] ).to_s
