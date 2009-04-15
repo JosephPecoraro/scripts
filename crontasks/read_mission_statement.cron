@@ -1,0 +1,9 @@
+#!/bin/bash
+# Start Date: Monday April 6, 2009
+# Current Version: 0.9
+# Author: Joseph Pecoraro
+# Decription: Read My Mission Statement.
+
+/bin/cat /Users/joe/smalldocs/mission_statement.txt |
+ 	/usr/local/bin/sed -e 's/Pecoraro/Peckoraro/' | # Phonetic pronunciation of my name for `say`
+	/usr/bin/say

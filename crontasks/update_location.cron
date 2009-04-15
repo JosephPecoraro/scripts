@@ -10,8 +10,23 @@
 # Debug mode just means provide any cmd-line argument
 DEBUG=$1
 
-# My Location Storing File
+# My Location Storing File and other Setup Details
 LOCATION_FILE='/Users/joe/.location'
+LOCATION_LOCK_FILE='/Users/joe/.location_lock'
+NOW=`/usr/bin/ruby -e 'puts Time.now.to_i'`
+IP=`curl --silent --connect-timeout 2 www.whatismyip.com/automation/n09230945.asp`
+
+# Lock File Exists, Either Delete it if its old or leave everything alone
+if [ -e "$LOCATION_LOCK_FILE" ]; then
+	LOCK_UNTIL=`/bin/cat $LOCATION_LOCK_FILE`
+	if [ $LOCK_UNTIL -lt $NOW ]; then
+		[ -n "$DEBUG" ] && echo "Lock File is old. Removing and moving on."
+		/bin/rm -f $LOCATION_LOCK_FILE
+	else
+		[ -n "$DEBUG" ] && echo "Lock Exists and is valid."
+		exit 0
+	fi
+fi
 
 # Used for School comparison
 day_hour=`/bin/date +"%A %H"`
@@ -25,12 +40,22 @@ if [ -n "$(/usr/sbin/arp -a | /usr/bin/grep 0:1e:2a:76:17:98)" ]; then
 elif [ -n "`echo {Monday\ {12,13,16,17},Wednesday\ {12,13,16,17}} | /usr/bin/grep \"$day_hour\"`" ]; then
 	[ -n "$DEBUG" ] && echo 'class'
 	echo "class" > $LOCATION_FILE
+	
+# Not Connected to the Internet, no IP Address
+elif [ -z "$IP" ]; then
+	[ -n "$DEBUG" ] && echo 'Not Connected to the Internet' && echo 'noip'
+	echo "noip" > $LOCATION_FILE
 
 # RIT Hostname should only exist when at rit
+elif [ "jpecoraro.rit.edu" = "$(nslookup $IP | awk '/name =/{print substr($4,1,length($4)-1)}')" ]; then
+	[ -n "$DEBUG" ] && echo 'rit'
+	echo "rit" > $LOCATION_FILE
+
+# RIT Hostname attempt number two, the above is cleaner though
 elif [ "0 packets received" != "$(/sbin/ping -c 1 -t 2 jpecoraro.rit.edu 2> /dev/null \
-                                    | cat - <(echo '0 packets received')              \
-                                    | grep -E -o '[0-9]+ packets received'            \
-                                    | head -1)" ]; then
+                                    | /bin/cat - <(echo '0 packets received')         \
+                                    | /usr/bin/grep -E -o '[0-9]+ packets received'   \
+                                    | /usr/bin/head -1)" ]; then
 	[ -n "$DEBUG" ] && echo 'rit'
 	echo "rit" > $LOCATION_FILE
 

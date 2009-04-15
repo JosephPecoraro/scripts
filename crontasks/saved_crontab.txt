@@ -1,0 +1,5 @@
+# Update ~/.location file! Minutes ending in 0,5 
+*/5 * * * * /bin/bash /Users/joe/bin/crontasks/update_location.cron
+
+# Update Adium based on my location! Minutes ending in 1,6
+1-59/5 * * * * /bin/bash /Users/joe/bin/crontasks/auto_status.cron

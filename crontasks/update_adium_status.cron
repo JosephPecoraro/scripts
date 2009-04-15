@@ -10,7 +10,7 @@
 # Debug mode just means provide any cmd lne argument
 DEBUG=$1
 
-# My Location Storing File
+# Files
 LOCATION_FILE='/Users/joe/.location'
 
 # My Location thanks to outside scripts
@@ -41,6 +41,7 @@ elif [ "$LOCATION" = "rit" ]; then
 
 # Default
 else
-	[ -n "$DEBUG" ] && echo '@Unknown'
-	/usr/bin/osascript -e 'tell application "Adium" to go online with message "@Unknown"'	
+	[ -n "$DEBUG" ] && echo "@$LOCATION"
+	/usr/bin/osascript -e "tell application \"Adium\" to go online with message \"@$LOCATION\""
+	# /usr/bin/osascript -e 'tell application "Adium" to go online with message "@Unknown"'	
 fi
