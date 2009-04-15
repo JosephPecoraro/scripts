@@ -4,6 +4,13 @@
 # Description: Opposite of Head.
 # Removes the first -n lines.
 
+#
+# You can use `line` instead.  Example:
+# 
+#  Before: trim -10 file.txt
+#  After:  line 11* file.txt
+#
+
 # Line to trim up to
 limit = 0
 
@@ -13,7 +20,6 @@ ARGV.each do |arg|
 		limit = matches[1].to_i
 	end
 end
-
 
 # Remove Command Line Args
 ARGV.delete_if { |arg| arg.match(/^-\d+$/) }
