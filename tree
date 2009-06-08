@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+# Author: Joseph Pecoraro
+# Date: Sunday, June 7, 2009
+# Description: Tree Listing of a Directory
+
+class DirTree
+	
+	def self.list(dir=Dir.pwd, delim='+-', spacer='| ')
+		depth = []
+		Dir.chdir(dir)
+		list = Dir['**/*']
+		spacer_length=spacer.length
+		prefix = [' '*delim.length]
+		puts "#{delim}#{File.basename(dir)}"
+		list.each_with_index do |filename, index|
+			orig = filename.dup
+
+			# Check Depth Array against next string
+			i = 0
+			depth.each do |lvl|
+				unless filename.sub!(/^#{lvl}\//,'').nil?
+					i += 1
+				else
+					break
+				end
+			end
+
+			# Clean the Prefix - Chop characters off the end
+			while i != depth.size
+				depth.pop
+				prefix.pop
+			end
+
+			# Output No Leading Pipe if nothing is on the same level
+			print "#{prefix.join}#{delim}#{filename}"
+			if File.directory?(orig)
+				print '/'
+				another = false
+				dir_prefix = depth.join('/')
+				index.upto(list.size-1) do |n|
+					str = list[n]
+					if str =~ /^#{dir_prefix}/
+						str = str.sub(/^#{dir_prefix}\/?/,'')
+						if str !~ /^#{filename}/
+							another = true
+							break
+						end
+					end
+				end
+				depth << filename
+				prefix << ( (another) ? spacer : ' '*spacer_length )
+			end
+			puts
+			
+		end
+	end
+	
+end
+
+
+# When Run as a Script
+if $0 == __FILE__
+	trap("INT") { puts "\nInterrupted."; exit }
+	require 'optparse'
+	OptionParser.new do |opts|
+		opts.banner =  "usage: tree [dir ...]"
+		opts.on('-h', '--help') { puts opts.banner; exit }
+	end.parse!
+	ARGV << '.' if ARGV.empty?
+	ARGV.each do |dir|
+		DirTree.list( File.expand_path(dir), '+--', '|  ' )
+		puts
+	end
+end
