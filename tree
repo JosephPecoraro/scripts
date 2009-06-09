@@ -2,15 +2,17 @@
 # Author: Joseph Pecoraro
 # Date: Sunday, June 7, 2009
 # Description: Tree Listing of a Directory
+# Delim and Spacer work best when they are the same length
 
 class DirTree
 	
-	def self.list(dir=Dir.pwd, delim='+-', spacer='| ')
+	def self.list(dir=Dir.pwd, delim='+-', spacer='| ', hidden=false)
+		list = []
 		depth = []
 		Dir.chdir(dir)
-		list = Dir['**/*']
 		spacer_length=spacer.length
 		prefix = [' '*delim.length]
+		list = hidden ? Dir.glob('**/*', File::FNM_DOTMATCH).delete_if { |x| x=~/\.(\.|DS_Store)?$/ } : Dir['**/*']
 		puts "#{delim}#{File.basename(dir)}"
 		list.each_with_index do |filename, index|
 			orig = filename.dup
@@ -62,13 +64,15 @@ end
 if $0 == __FILE__
 	trap("INT") { puts "\nInterrupted."; exit }
 	require 'optparse'
+	hidden = false
 	OptionParser.new do |opts|
-		opts.banner =  "usage: tree [dir ...]"
-		opts.on('-h', '--help') { puts opts.banner; exit }
+		opts.banner =  "usage: tree [options] [dir ...]"
+		opts.on('-a', '--all', 'Show hidden files') { hidden = true }
+		opts.on('-h', '--help', 'Show this help.') { puts opts; exit }
 	end.parse!
 	ARGV << '.' if ARGV.empty?
 	ARGV.each do |dir|
-		DirTree.list( File.expand_path(dir), '+--', '|  ' )
+		DirTree.list( File.expand_path(dir), '+--', '|  ', hidden )
 		puts
 	end
 end
