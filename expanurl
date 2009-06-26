@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # Author: Joseph Pecoraro
 # Date: Saturday December 13, 2008
+# Updated: Friday June 26, 2009
 # Description: When I'm using ExpanDrive and I'm
 # remotely logged into a server, I can use this
 # script to "open filename" and it will open using
@@ -15,20 +16,9 @@ require 'optparse'
 $options = { :url => false }
 OptionParser.new do |opts|
 	opts.banner = 'usage: expanurl [option] [files]'
-	opts.on("-u", "--url", "Print the URL that would have been used.") do |u|
-		$options[:url] = u
-	end
-	opts.on_tail("-h", "--help", "Show this message") do
-		puts opts
-		exit
-	end
+	opts.on("-u", "--url", "Print the URL that would have been used.") { |u| $options[:url] = u }
+	opts.on_tail("-h", "--help", "Show this message") { puts opts }
 end.parse!
-
-# Exit with a msg
-def err(msg)
-	puts msg
-	exit 1
-end
 
 # Properly open/print a url
 def handle_url(url)
@@ -79,69 +69,74 @@ end
 
 
 # Local Variables
+PWD = Dir.pwd
 mapping = UrlMap.new
 url_prefix = nil
 server = nil
 volume = nil
 
-# Check the if the current directory is an
-# ExpanDrive Volume and a public_html folder
-pwd = `pwd`
-match = pwd.match(/^\/Volumes\/([^\/]+)/)
-if match.nil?
-	err("Not inside an ExpanDrive Volume")
-elsif !pwd.match(/\/public_html\/?/)
-	err("Not inside a public_html directory.")
-else
-	volume = match[1]
-	defaults = `defaults read com.magnetk.ExpanDrive Drives`
-	defaults.gsub!(/\n/, '')
-	props = defaults.match(/\{[^\}]+driveName\s+=\s+#{volume}[^\}]+server\s+=\s+"([^"]+)"[^\}]+\}/)
-	if props
-		server = props[1]
-	else
-		err("This Volume (#{volume}) is not an ExpanDrive Volume")
-	end
-end
+# Process Each File, Assume pwd if No File Given
+files = ARGV
+files << PWD if ARGV.empty?
+files.each do |filename|
+  
+  # Expand the filename
+  filename = File.expand_path(filename)
+  
+  # Check the if the current directory is an
+  # ExpanDrive Volume and a public_html folder
+  match = filename.match(/^\/Volumes\/([^\/]+)/)
+  if match.nil?
+  	puts "'#{filename}' is not inside an ExpanDrive Volume"
+  	next
+  elsif !filename.match(/\/public_html\/?/)
+  	puts "'#{filename}' is not inside a public_html directory."
+  	next
+  else
+  	volume = match[1]
+  	defaults = `defaults read com.magnetk.ExpanDrive Drives`
+  	defaults.gsub!(/\n/, '')
+  	props = defaults.match(/\{[^\}]+driveName\s+=\s+#{volume}[^\}]+server\s+=\s+"([^"]+)"[^\}]+\}/)
+  	if props
+  		server = props[1]
+  	else
+  		puts "This Volume (#{volume}) is not an ExpanDrive Volume"
+  		next
+  	end
+  end
 
-# Check if a mapping exists
-# Otherwise create and store one
-if mapping.is_mapping?(server)
-	url_prefix = mapping.get_mapping(server)
-else
-	
-	# Prompt
-	puts
-	puts "This is the first time you've used expanurl for #{volume}"
-	puts "Please Provide us with a mapping for #{server}"
-	puts "Mappings are stored in #{mapping.path}"
-	puts "Example: http://bogojoker.com/"
-	print ">> "
-	
-	# Store user input and proceed
-	url_prefix = gets.chomp
-	url_prefix += '/' unless url_prefix.match(/\/$/)
-	mapping.add_mapping(server, url_prefix)
-	
-	# Terminal Output
-	puts
-	puts "Server: #{server}"
-	puts "Maps to: #{url_prefix}"
-	puts
+  # Check if a mapping exists
+  # Otherwise create and store one
+  if mapping.is_mapping?(server)
+  	url_prefix = mapping.get_mapping(server)
+  else
 
-end
+  	# Prompt
+  	puts
+  	puts "This is the first time you've used expanurl for #{volume}"
+  	puts "Please Provide us with a mapping for #{server}"
+  	puts "Mappings are stored in #{mapping.path}"
+  	puts "Example: http://bogojoker.com/"
+  	print ">> "
 
-# Build the URL
-subpath = pwd.match(/public_html\/?(.*)/)[1]
-subpath += '/' unless subpath.length.zero? || subpath.match(/\/$/)
-url_prefix += subpath
+  	# Store user input and proceed
+  	url_prefix = gets.chomp
+  	url_prefix += '/' unless url_prefix.match(/\/$/)
+  	mapping.add_mapping(server, url_prefix)
 
-# If No Files, open the directory
-# Otherwise,   open each provided file
-if ARGV.size == 0
-	handle_url( url_prefix )
-else
-	ARGV.each do |filename|
-		handle_url( "#{url_prefix}#{URI.escape(filename)}" )
-	end
+  	# Display Result
+  	puts
+  	puts "Server: #{server}"
+  	puts "Maps to: #{url_prefix}"
+  	puts
+
+  end
+  
+  # Build the URL subpath
+  subpath = filename.match(/public_html\/?(.*)/)[1]
+  subpath += '/' if !subpath.empty? && File.directory?(filename) && subpath !~ /^\/$/
+  
+  # Open the file/directory
+  handle_url( url_prefix + subpath )
+  
 end
