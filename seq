@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+# Author: Joseph Pecoraro
+# Date: Wednesday, September 23, 2009
+# Description: A "seq" like program for the mac!
+
+class Seq
+  attr_reader :start, :step, :end
+  
+  def initialize(args)
+    @start, @step, @end = 1, 1, 0
+    case args.size
+    when 1 then
+      @end = args[0].to_i.abs
+    when 2 then 
+      @start = args[0].to_i.abs
+      @end = args[1].to_i.abs
+    when 3 then
+      @start = args[0].to_i.abs
+      @step = args[1].to_i.abs
+      @end = args[2].to_i.abs
+    end
+    
+    validate!
+  end
+  
+  def validate!
+    @start = @end if @end < @start
+    @step = @step.abs if @step < 0
+  end
+  
+  def print
+    puts self.to_a
+  end
+  
+  def to_a
+    arr = []
+    curr = @start
+    while (curr <= @end)
+      arr.push(curr)
+      curr += @step
+    end
+    arr
+  end
+
+end
+
+# When run as as script
+if $0 == __FILE__
+	
+	# Handle ^C Interrupt
+	trap("INT") { puts; exit }
+	
+	# Usage
+  if ARGV.size.zero?
+    program_name = $0.split(/\//).last
+    puts "usage: #{program_name} END"
+    puts "usage: #{program_name} START END"
+    puts "usage: #{program_name} START STEP END"
+  else
+    Seq.new(ARGV).print
+  end
+
+end
