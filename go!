@@ -1,0 +1,26 @@
+#!/bin/bash
+# Author: Joseph Pecoraro
+# Date: Saturday, November 14, 2009
+# Description: Compile, Link, and Run a go script.
+
+# Requires a file
+if [ ! "$1" ]; then
+  echo "usage: go! <filename>"; exit 1
+fi
+
+# Use the proper tools for the arch
+if [ $GOARCH = "amd64" ]; then
+  COMPILER=6g; LINKER=6l; EXTENSION=.6
+elif [ $GOARCH = "386" ]; then
+  COMPILER=8g; LINKER=8l; EXTENSION=.8
+elif [ $GOARCH = "arm" ]; then
+  COMPILER=5g; LINKER=5l; EXTENSION=.5
+else
+  echo "unsupported GOARCH: $GOARCH"; exit 2
+fi
+
+# Strip .go (if its there)
+file=`echo $1 | sed -e 's/.go$//'`
+
+# Compile, Link, and Run (break on any error)
+$COMPILER "$file.go" && $LINKER -o $file "$file$EXTENSION" && ./$file

@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+# Author: Joseph Pecoraro
+# Date: Wednesday, September 30, 2009
+# Description: Simple Haskell Quick Starter
+
+# Defaults
+EDITOR = 'mate' # ENV['EDITOR'] for most Unix Guys
+HASK_DIR = File.expand_path('~/haskell')
+
+# Determine the File
+#  - default to temp.hs
+#  - use provided file if exists
+#  - create new temp file with given name
+file = File.join(HASK_DIR, 'temp.hs');
+if ARGV.size > 0
+  name = ARGV[0]
+  if File.file? name
+    file = name
+  else
+    name += '.hs' unless name =~ /\.hs$/
+    file = name
+  end
+end
+
+# Work the magic
+system "touch #{file}"
+system "#{EDITOR} #{file}"
+system "ghci #{file}"
