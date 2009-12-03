@@ -12,7 +12,7 @@ and provide feedback or advice.
 Enjoy,  
 Joseph Pecoraro
 
-Copyright (c) 2008 Joseph Pecoraro, released under the MIT license
+Copyright (c) 2008 Joseph Pecoraro, released under the BSD license
 
 ### Contact Information
 Name: Joseph Pecoraro  
